@@ -1,0 +1,164 @@
+{
+ "business": "WARS — a private invite-only anime/manga/light-novel reading + chat site for one friend group",
+ "seed": 168710,
+ "dealt": 20,
+ "answered": 20,
+ "skipped": [],
+ "buys": 13,
+ "passes": 7,
+ "buy_rate": 0.65,
+ "by_segment": [
+  [
+   "Official-source reader",
+   2,
+   1.0
+  ],
+  [
+   "Reader-first friend",
+   6,
+   0.8333333333333334
+  ],
+  [
+   "Casual drop-in",
+   4,
+   0.5
+  ],
+  [
+   "Discord-native friend",
+   8,
+   0.5
+  ]
+ ],
+ "by_behaviour": [
+  [
+   "Binge reader",
+   3,
+   1.0
+  ],
+  [
+   "Phone-only reader",
+   5,
+   0.8
+  ],
+  [
+   "Lurker",
+   3,
+   0.6666666666666666
+  ],
+  [
+   "Lives in Discord",
+   6,
+   0.6666666666666666
+  ],
+  [
+   "Setup is fine, thanks",
+   1,
+   0.0
+  ],
+  [
+   "Official-sources only",
+   2,
+   0.0
+  ]
+ ],
+ "by_income": [
+  [
+   "$36,000 and up",
+   7,
+   0.7142857142857143
+  ],
+  [
+   "$15,000 to $36,000",
+   7,
+   0.7142857142857143
+  ],
+  [
+   "under $15,000",
+   6,
+   0.5
+  ]
+ ],
+ "why_not": [
+  [
+   "habit",
+   2,
+   [
+    "The current folder-and-chat setup works fine and I'm not the one who moves first anyway. If the group actually migrates over I'll follow along, but I'm not switching readers on my own for a site that might be dead in two weeks.",
+    "It's free and in my group chat which is convenient, but I already read on sites I'm used to and don't wanna jump for just two series."
+   ],
+   [
+    "P004",
+    "P010"
+   ]
+  ],
+  [
+   "values",
+   2,
+   [
+    "Free is nice, but Death Note and ORV on a private site with no word on licensing smells like ripped files, and I only read from VIZ, Manga Plus, or J-Novel Club. Plus me and the guys already have Discord plus a reader tab, so there's nothing to switch for.",
+    "It's free, but Death Note and ORV sitting on a private site means someone ripped them, and I only read through VIZ, Manga Plus, or J-Novel Club — I'm not gonna start reading off stolen files just because the reader is nicer."
+   ],
+   [
+    "P005",
+    "P012"
+   ]
+  ],
+  [
+   "trust",
+   2,
+   [
+    "I'm broke with $0 a year, and even if I wasn't, I don't wanna hand my reading or chat to some random site.",
+    "I already have Discord and a reader site for the stuff I read, so I don't see a reason to switch to some random new site just for these two series."
+   ],
+   [
+    "P006",
+    "P008"
+   ]
+  ],
+  [
+   "need",
+   1,
+   [
+    "I already have a reader site and we already have Discord for the chat - two series isn't enough for me to bother switching to this."
+   ],
+   [
+    "P003"
+   ]
+  ]
+ ],
+ "why_yes": [
+  [
+   "convenience",
+   12,
+   [
+    "It's free and it saves me the app-switching between Discord and whatever reader site I'm on — I read on my phone at night, so 'where I stopped' actually matters to me.",
+    "I'm already bouncing between a reader site and Discord all day, so one place where I read ORV and talk about it without switching apps is genuinely useful — and it's free, so there's nothing to lose but the setup."
+   ],
+   [
+    "P001",
+    "P002"
+   ]
+  ],
+  [
+   "trust",
+   1,
+   [
+    "It's free and it kills two annoyances I actually have — hunting for reader sites and losing my place across series. The chat part I don't need, Discord already does that, but the reader alone is worth one try."
+   ],
+   [
+    "P014"
+   ]
+  ]
+ ],
+ "flip": [
+  "If it had all the series we actually read, not just two",
+  "If most of the group actually moved onto it and kept using it for a few weeks, so it isn't just another ghost site.",
+  "If you could show the series are licensed/official sources and the group actually moves over, I'd be in.",
+  "If someone I already trust in the group ran it themselves and showed me it's not logging anything.",
+  "If it was hosted by someone I actually knew and trusted, and I could see exactly what data was being collected",
+  "If it had way more of the series my group actually reads, not just these two.",
+  "If you could show me the files are licensed or officially sourced somehow, I'd actually try it — the remembers-where-you-stopped thing sounds useful."
+ ],
+ "purchases_first_month_per_buyer": 1.0,
+ "price_answers": 20
+}

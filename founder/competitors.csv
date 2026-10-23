@@ -1,0 +1,9 @@
+name,type,url,location_or_channel,price_of_comparable_item,what_it_sells,positioning_line,rating,review_count,source_date
+MangaDex,indirect,https://mangadex.org/,web app,free (donations),manga reader with community features (groups, comments forums),,,,"2026-10-20 (homepage read live; review mining not done)"
+MANGA Plus by SHUEISHA,indirect,https://mangaplus.shueisha.co.jp/,web app,free,official Shueisha simulpub manga chapters,,,,"2026-10-20 (page is JS-rendered; title verified, details not extracted)"
+VIZ Shonen Jump,indirect,https://www.viz.com/shonenjump,web app,"free first chapters; paid membership (price not verified today)",official Shonen Jump manga library + volumes,"Read Free Shonen Jump Manga (headline verified live)",,,"2026-10-20"
+J-Novel Club,indirect,https://j-novel.club/,subscription site,"membership price not verified today",light novels and manga in weekly digital parts,,,,"2026-10-20 (homepage read live)"
+Discord,indirect,https://discord.com/,app,free,group chat servers voice text threads reactions,,"","millions (not fetched)",2026-10-20
+Shared files + messenger (Drive/Telegram/WhatsApp + PDF/EPUB drops),substitute,n/a,existing tools,free,"how a friend group actually reads and talks today: files in a folder links in a chat",,,,
+eBook stores (Kindle / BookWalker),substitute,https://www.amazon.com/kindle-dbs,app/web,per-volume purchase,licensed light novel and manga ebooks,,,2026-10-20
+Public unlicensed aggregator sites,substitute,various,web,free,full manga and novel libraries without licensing,,,2026-10-20

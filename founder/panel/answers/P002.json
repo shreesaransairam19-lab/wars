@@ -1,0 +1,13 @@
+{
+  "id": "P002",
+  "buys": true,
+  "purchases_first_month": 1,
+  "reason_code": "convenience",
+  "reason": "I'm already bouncing between a reader site and Discord all day, so one place where I read ORV and talk about it without switching apps is genuinely useful — and it's free, so there's nothing to lose but the setup.",
+  "objection": "A link-only invite means the link gets screenshotted and passed around, and if half the group never leaves Discord the chat room dies and I'm back to juggling two apps anyway.",
+  "would_change_my_mind": "If on day one the whole group is already in there — series chats active, not just the founder and two guys — I'm in for good.",
+  "price_too_cheap": 1,
+  "price_cheap": 3,
+  "price_expensive": 8,
+  "price_too_expensive": 15
+}

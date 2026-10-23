@@ -1,0 +1,13 @@
+{
+  "id": "P012",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "values",
+  "reason": "It's free, but Death Note and ORV sitting on a private site means someone ripped them, and I only read through VIZ, Manga Plus, or J-Novel Club — I'm not gonna start reading off stolen files just because the reader is nicer.",
+  "objection": "I already have Discord plus a shared folder with my friends, so a private site has to beat that AND not make me feel weird about where the files came from — right now it fails the second part.",
+  "would_change_my_mind": "If you could show me the files are licensed or officially sourced somehow, I'd actually try it — the remembers-where-you-stopped thing sounds useful.",
+  "price_too_cheap": 1,
+  "price_cheap": 5,
+  "price_expensive": 12,
+  "price_too_expensive": 25
+}

@@ -1,0 +1,13 @@
+{
+  "id": "P018",
+  "buys": true,
+  "purchases_first_month": 1,
+  "reason_code": "convenience",
+  "reason": "It's free, it's already our group, and if the phone reader is decent I'd rather scroll ORV at night and reply in the same place than bounce between Discord and whatever site I'm on now.",
+  "objection": "I don't want my late-night reading or chat activity sitting on some server nobody's actually in charge of — invite-only and no public links is nice, but who's hosting this and can you see what I read?",
+  "would_change_my_mind": "If the mobile reader is bad even once, I'm back to my old site and I don't come back — and if I ever find my reading history got logged somewhere sketchy, same thing.",
+  "price_too_cheap": 1,
+  "price_cheap": 3,
+  "price_expensive": 6,
+  "price_too_expensive": 10
+}

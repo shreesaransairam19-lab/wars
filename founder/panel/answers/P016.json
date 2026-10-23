@@ -1,0 +1,13 @@
+{
+  "id": "P016",
+  "buys": true,
+  "purchases_first_month": 1,
+  "reason_code": "convenience",
+  "reason": "It's free and it puts the reader and the group chat in one place, so I lose nothing by tapping the link and trying it for a week.",
+  "objection": "If the phone reader is clunky at night or it forgets where I stopped, I'm gone — I'm not adding a third thing to juggle next to Discord and my current site.",
+  "would_change_my_mind": "Opening it on my phone and finding the reading worse than what I already use, or it losing my place.",
+  "price_too_cheap": 1,
+  "price_cheap": 3,
+  "price_expensive": 6,
+  "price_too_expensive": 10
+}

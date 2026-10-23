@@ -1,0 +1,13 @@
+{
+  "id": "P003",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "need",
+  "reason": "I already have a reader site and we already have Discord for the chat - two series isn't enough for me to bother switching to this.",
+  "objection": "Why only Death Note and ORV? Everything I actually follow is already on my reader site, so this wouldn't replace it for me.",
+  "would_change_my_mind": "If it had all the series we actually read, not just two",
+  "price_too_cheap": 0.5,
+  "price_cheap": 1,
+  "price_expensive": 2,
+  "price_too_expensive": 3
+}

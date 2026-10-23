@@ -1,0 +1,13 @@
+{
+  "id": "P020",
+  "buys": true,
+  "purchases_first_month": 1,
+  "reason_code": "convenience",
+  "reason": "It's free and it's our group's thing, so there's no downside to trying it once - one place to binge chapters and argue about them instead of juggling Discord plus some random reader site.",
+  "objection": "Another site, another login - I will forget it exists in two weeks and go back to the group chat anyway.",
+  "would_change_my_mind": "If I never need a separate password - like logging in with Discord or clicking a link that just drops me straight into the series I was reading.",
+  "price_too_cheap": 1,
+  "price_cheap": 3,
+  "price_expensive": 7,
+  "price_too_expensive": 10
+}

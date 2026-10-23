@@ -1,0 +1,13 @@
+{
+  "id": "P015",
+  "buys": true,
+  "purchases_first_month": 1,
+  "reason_code": "convenience",
+  "reason": "It's free, so sure, I'd take the link once — and honestly the reader remembering where I stopped is the only part Discord doesn't already give me. The chat next to it is just Discord with extra steps.",
+  "objection": "Discord plus a pinned shared-folder link already works fine for us, and now there's one more place to check that you might get bored of maintaining next month.",
+  "would_change_mind": "If the reader is clunkier than the site we already use — slow loads, bad panel ordering on phone — I'm back in Discord within a week and not looking back.",
+  "price_too_cheap": 1,
+  "price_cheap": 3,
+  "price_expensive": 6,
+  "price_too_expensive": 10
+}

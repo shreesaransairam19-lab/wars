@@ -1,0 +1,841 @@
+{
+  "communities": {
+    "0": [
+      "src_app_api_bookmarks_route",
+      "src_app_api_bookmarks_route_bookmarkschema",
+      "src_app_api_bookmarks_route_delete",
+      "src_app_api_bookmarks_route_get",
+      "src_app_api_bookmarks_route_post",
+      "src_app_api_chapters_id_assets_route",
+      "src_app_api_chapters_id_assets_route_get",
+      "src_app_api_chapters_route",
+      "src_app_api_chapters_route_delete",
+      "src_app_api_chapters_route_get",
+      "src_app_api_chapters_route_patch",
+      "src_app_api_chapters_route_post",
+      "src_app_api_chat_messages_route",
+      "src_app_api_chat_messages_route_get",
+      "src_app_api_chat_messages_route_post",
+      "src_app_api_chat_reactions_route",
+      "src_app_api_chat_reactions_route_post",
+      "src_app_api_progress_route",
+      "src_app_api_progress_route_get",
+      "src_app_api_progress_route_progressschema",
+      "src_app_api_progress_route_put",
+      "src_app_api_ratings_route",
+      "src_app_api_ratings_route_get",
+      "src_app_api_ratings_route_put",
+      "src_app_api_reports_route",
+      "src_app_api_reports_route_get",
+      "src_app_api_reports_route_post",
+      "src_app_api_reports_route_reportschema",
+      "src_app_api_reviews_route",
+      "src_app_api_reviews_route_get",
+      "src_app_api_reviews_route_moderateschema",
+      "src_app_api_reviews_route_patch",
+      "src_app_api_reviews_route_post",
+      "src_app_api_series_route",
+      "src_app_api_series_route_delete",
+      "src_app_api_series_route_get",
+      "src_app_api_series_route_patch",
+      "src_app_api_series_route_post",
+      "src_app_api_upload_route",
+      "src_app_api_upload_route_get",
+      "src_app_api_upload_route_post",
+      "src_lib_permissions_guards",
+      "src_lib_permissions_guards_getuserhighestrole",
+      "src_lib_permissions_guards_getuserroles",
+      "src_lib_permissions_guards_hasrole",
+      "src_lib_permissions_guards_role_hierarchy",
+      "src_lib_permissions_guards_roleatleast",
+      "src_lib_permissions_guards_rolename",
+      "src_lib_security_file_validation_generatestoragepath",
+      "src_lib_security_rate_limit",
+      "src_lib_security_rate_limit_checkratelimit",
+      "src_lib_security_rate_limit_getclientip",
+      "src_lib_security_rate_limit_rate_limits",
+      "src_lib_security_rate_limit_ratelimitentry",
+      "src_lib_security_rate_limit_store",
+      "src_lib_security_sanitize",
+      "src_lib_security_sanitize_containsharmfulcontent",
+      "src_lib_security_sanitize_escapehtml",
+      "src_lib_security_sanitize_html_entities",
+      "src_lib_security_sanitize_sanitizechatmessage",
+      "src_lib_security_sanitize_sanitizereview",
+      "src_lib_security_sanitize_striphtml",
+      "src_lib_supabase_server",
+      "src_lib_supabase_server_createclient",
+      "src_lib_validation_chat",
+      "src_lib_validation_chat_chatmessageinput",
+      "src_lib_validation_chat_chatmessageschema",
+      "src_lib_validation_chat_reactioninput",
+      "src_lib_validation_chat_reactionschema",
+      "src_lib_validation_reviews",
+      "src_lib_validation_reviews_ratinginput",
+      "src_lib_validation_reviews_ratingschema",
+      "src_lib_validation_reviews_reviewinput",
+      "src_lib_validation_reviews_reviewschema",
+      "src_lib_validation_series",
+      "src_lib_validation_series_chapterinput",
+      "src_lib_validation_series_chapterschema",
+      "src_lib_validation_series_seriesinput",
+      "src_lib_validation_series_seriesschema",
+      "src_lib_xp_calculate_xp_daily_caps",
+      "tests_unit_sanitize_test"
+    ],
+    "1": [
+      "class_variance_authority",
+      "clsx",
+      "hookform_resolvers",
+      "lucide_react",
+      "next",
+      "package",
+      "package_dependencies",
+      "package_dependencies_class_variance_authority",
+      "package_dependencies_clsx",
+      "package_dependencies_epubjs",
+      "package_dependencies_hookform_resolvers",
+      "package_dependencies_lucide_react",
+      "package_dependencies_next",
+      "package_dependencies_react",
+      "package_dependencies_react_dom",
+      "package_dependencies_react_hook_form",
+      "package_dependencies_supabase_ssr",
+      "package_dependencies_supabase_supabase_js",
+      "package_dependencies_tailwind_merge",
+      "package_dependencies_zod",
+      "package_json_epubjs",
+      "package_name",
+      "package_private",
+      "package_scripts",
+      "package_scripts_build",
+      "package_scripts_db_migrate",
+      "package_scripts_db_seed",
+      "package_scripts_dev",
+      "package_scripts_lint",
+      "package_scripts_start",
+      "package_scripts_test",
+      "package_scripts_test_e2e",
+      "package_scripts_test_watch",
+      "package_version",
+      "react",
+      "react_dom",
+      "react_hook_form",
+      "supabase_ssr",
+      "supabase_supabase_js",
+      "tailwind_merge",
+      "zod"
+    ],
+    "2": [
+      "auth",
+      "auth_users",
+      "public",
+      "public_handle_new_user",
+      "public_update_updated_at",
+      "supabase_migrations_0001_initial_schema",
+      "supabase_migrations_0001_initial_schema_on_auth_user_created",
+      "supabase_migrations_0001_initial_schema_public_audit_logs",
+      "supabase_migrations_0001_initial_schema_public_ban_appeals",
+      "supabase_migrations_0001_initial_schema_public_bookmarks",
+      "supabase_migrations_0001_initial_schema_public_chapter_assets",
+      "supabase_migrations_0001_initial_schema_public_chapters",
+      "supabase_migrations_0001_initial_schema_public_chat_messages",
+      "supabase_migrations_0001_initial_schema_public_chat_room_members",
+      "supabase_migrations_0001_initial_schema_public_chat_rooms",
+      "supabase_migrations_0001_initial_schema_public_feedback",
+      "supabase_migrations_0001_initial_schema_public_handle_new_user",
+      "supabase_migrations_0001_initial_schema_public_message_reactions",
+      "supabase_migrations_0001_initial_schema_public_moderation_actions",
+      "supabase_migrations_0001_initial_schema_public_profiles",
+      "supabase_migrations_0001_initial_schema_public_ratings",
+      "supabase_migrations_0001_initial_schema_public_reading_progress",
+      "supabase_migrations_0001_initial_schema_public_reports",
+      "supabase_migrations_0001_initial_schema_public_review_replies",
+      "supabase_migrations_0001_initial_schema_public_reviews",
+      "supabase_migrations_0001_initial_schema_public_roles",
+      "supabase_migrations_0001_initial_schema_public_series",
+      "supabase_migrations_0001_initial_schema_public_subscriptions",
+      "supabase_migrations_0001_initial_schema_public_update_updated_at",
+      "supabase_migrations_0001_initial_schema_public_user_roles",
+      "supabase_migrations_0001_initial_schema_public_xp_ledger",
+      "supabase_migrations_0001_initial_schema_update_chapters_updated_at",
+      "supabase_migrations_0001_initial_schema_update_profiles_updated_at",
+      "supabase_migrations_0001_initial_schema_update_reviews_updated_at",
+      "supabase_migrations_0001_initial_schema_update_series_updated_at",
+      "supabase_migrations_0001_initial_schema_update_subscriptions_updated_at"
+    ],
+    "3": [
+      "claude_app_router",
+      "claude_architecture",
+      "claude_commands",
+      "claude_design_tokens",
+      "claude_file_upload_validation",
+      "claude_giphy",
+      "claude_key_conventions",
+      "claude_private_storage_buckets",
+      "claude_rate_limiting",
+      "claude_rights_confirmation",
+      "claude_rls",
+      "claude_role_admin",
+      "claude_role_donator",
+      "claude_role_editor",
+      "claude_role_hierarchy",
+      "claude_role_moderator",
+      "claude_role_owner",
+      "claude_role_reader",
+      "claude_security_checklist",
+      "claude_server_side_role_checks",
+      "claude_service_role_key",
+      "claude_signed_urls",
+      "claude_supabase",
+      "claude_supabase_auth",
+      "claude_supabase_realtime",
+      "claude_supabase_storage",
+      "claude_tailwind_css_4",
+      "claude_test_content",
+      "claude_wars",
+      "claude_xp_writes",
+      "claude_xss_sanitization",
+      "claude_zod_validation",
+      "package_dependencies_stripe",
+      "stripe"
+    ],
+    "4": [
+      "eslint",
+      "eslint_config_next",
+      "jsdom",
+      "package_devdependencies",
+      "package_devdependencies_eslint",
+      "package_devdependencies_eslint_config_next",
+      "package_devdependencies_jsdom",
+      "package_devdependencies_playwright_test",
+      "package_devdependencies_tailwindcss",
+      "package_devdependencies_tailwindcss_turbopack",
+      "package_devdependencies_testing_library_dom",
+      "package_devdependencies_testing_library_jest_dom",
+      "package_devdependencies_testing_library_react",
+      "package_devdependencies_testing_library_user_event",
+      "package_devdependencies_types_node",
+      "package_devdependencies_types_react",
+      "package_devdependencies_types_react_dom",
+      "package_devdependencies_typescript",
+      "package_devdependencies_vite",
+      "package_devdependencies_vitejs_plugin_react",
+      "package_devdependencies_vitest",
+      "playwright_test",
+      "tailwindcss",
+      "tailwindcss_turbopack",
+      "testing_library_dom",
+      "testing_library_react",
+      "testing_library_user_event",
+      "types_node",
+      "types_react",
+      "types_react_dom",
+      "typescript",
+      "vite",
+      "vitejs_plugin_react",
+      "vitest"
+    ],
+    "5": [
+      "src_app_api_stripe_checkout_route",
+      "src_app_api_stripe_checkout_route_post",
+      "src_app_api_stripe_webhook_route",
+      "src_app_api_stripe_webhook_route_post",
+      "src_app_login_page",
+      "src_app_login_page_loginpage",
+      "src_app_login_page_metadata",
+      "src_app_register_page",
+      "src_app_register_page_metadata",
+      "src_app_register_page_registerpage",
+      "src_features_auth_actions",
+      "src_features_auth_actions_authactionresult",
+      "src_features_auth_actions_getprofile",
+      "src_features_auth_actions_getprofileroles",
+      "src_features_auth_actions_getuser",
+      "src_features_auth_actions_login",
+      "src_features_auth_actions_logout",
+      "src_features_auth_actions_register",
+      "src_features_auth_loginform",
+      "src_features_auth_loginform_initialstate",
+      "src_features_auth_loginform_loginform",
+      "src_features_auth_registerform",
+      "src_features_auth_registerform_initialstate",
+      "src_features_auth_registerform_registerform",
+      "src_lib_stripe",
+      "src_lib_stripe_getstripe",
+      "src_lib_supabase_admin",
+      "src_lib_supabase_admin_createadminclient",
+      "src_lib_validation_auth",
+      "src_lib_validation_auth_logininput",
+      "src_lib_validation_auth_loginschema",
+      "src_lib_validation_auth_registerinput",
+      "src_lib_validation_auth_registerschema"
+    ],
+    "6": [
+      "src_app_read_seriesslug_chapterslug_page",
+      "src_app_read_seriesslug_chapterslug_page_chapterreader",
+      "src_app_read_seriesslug_chapterslug_page_params",
+      "src_app_read_seriesslug_chapterslug_page_readchapterpage",
+      "src_components_reader_mangareader",
+      "src_components_reader_mangareader_mangareader",
+      "src_components_reader_mangareader_mangareader_handlekey",
+      "src_components_reader_mangareader_mangareaderprops",
+      "src_components_reader_mangareader_readerasset",
+      "src_components_reader_mangareader_viewmode",
+      "src_components_reader_novelreader",
+      "src_components_reader_novelreader_findtocbyhref",
+      "src_components_reader_novelreader_font_sizes",
+      "src_components_reader_novelreader_navitem",
+      "src_components_reader_novelreader_novelreader",
+      "src_components_reader_novelreader_novelreader_cyclefont",
+      "src_components_reader_novelreader_novelreader_cyclereadingtheme",
+      "src_components_reader_novelreader_novelreader_gototocitem",
+      "src_components_reader_novelreader_novelreader_handlekey",
+      "src_components_reader_novelreader_novelreader_init",
+      "src_components_reader_novelreader_novelreaderprops",
+      "src_components_reader_novelreader_reading_themes",
+      "src_components_reader_novelreader_readingtheme",
+      "src_components_reader_novelreader_theme_styles",
+      "src_components_reader_readerpage",
+      "src_components_reader_readerpage_asset",
+      "src_components_reader_readerpage_chapter",
+      "src_components_reader_readerpage_readerpage",
+      "src_components_reader_readerpage_readerpage_fetchassets",
+      "src_components_reader_readerpage_readerpageprops",
+      "src_components_reader_readerpage_series"
+    ],
+    "7": [
+      "ref_dom",
+      "ref_dom_iterable",
+      "ref_esnext",
+      "ref_mts",
+      "ref_next_dev_types_ts",
+      "ref_next_env_d_ts",
+      "ref_next_types_ts",
+      "ref_node_modules",
+      "ref_ts",
+      "ref_tsx",
+      "tsconfig",
+      "tsconfig_compileroptions",
+      "tsconfig_compileroptions_allowjs",
+      "tsconfig_compileroptions_esmoduleinterop",
+      "tsconfig_compileroptions_incremental",
+      "tsconfig_compileroptions_isolatedmodules",
+      "tsconfig_compileroptions_jsx",
+      "tsconfig_compileroptions_lib",
+      "tsconfig_compileroptions_module",
+      "tsconfig_compileroptions_moduleresolution",
+      "tsconfig_compileroptions_noemit",
+      "tsconfig_compileroptions_paths",
+      "tsconfig_compileroptions_plugins",
+      "tsconfig_compileroptions_resolvejsonmodule",
+      "tsconfig_compileroptions_skiplibcheck",
+      "tsconfig_compileroptions_strict",
+      "tsconfig_compileroptions_target",
+      "tsconfig_exclude",
+      "tsconfig_include"
+    ],
+    "8": [
+      "src_types_database",
+      "src_types_database_banappeal",
+      "src_types_database_chapter",
+      "src_types_database_chapterasset",
+      "src_types_database_chatmessage",
+      "src_types_database_chatroom",
+      "src_types_database_database",
+      "src_types_database_feedback",
+      "src_types_database_json",
+      "src_types_database_moderationaction",
+      "src_types_database_profile",
+      "src_types_database_rating",
+      "src_types_database_readingprogress",
+      "src_types_database_report",
+      "src_types_database_review",
+      "src_types_database_role",
+      "src_types_database_series",
+      "src_types_database_subscription",
+      "src_types_database_userrole",
+      "src_types_database_xpledger"
+    ],
+    "9": [
+      "agents_breaking_changes",
+      "agents_generate_agent_files",
+      "agents_next_dev",
+      "agents_next_docs",
+      "agents_nextjs_agent_rules",
+      "claude_next_js_16",
+      "readme_app_page",
+      "readme_create_next_app",
+      "readme_dev_server",
+      "readme_geist_font",
+      "readme_learn_next_js",
+      "readme_localhost_3000",
+      "readme_next_font",
+      "readme_next_js",
+      "readme_next_js_deployment_docs",
+      "readme_next_js_docs",
+      "readme_vercel_platform"
+    ],
+    "10": [
+      "src_app_page",
+      "src_app_page_homepage",
+      "src_components_home_continuereading",
+      "src_components_home_continuereading_continuereading",
+      "src_components_home_continuereading_progressrow",
+      "src_components_home_feedbackpanel",
+      "src_components_home_feedbackpanel_feedbackpanel",
+      "src_components_home_feedbackpanel_feedbackpanel_handlesubmit",
+      "src_components_home_feedbackpanel_rationale_17",
+      "src_components_home_herosection",
+      "src_components_home_herosection_herosection",
+      "src_components_home_menucards",
+      "src_components_home_menucards_cards",
+      "src_components_home_menucards_colormap",
+      "src_components_home_menucards_menucards"
+    ],
+    "11": [
+      "src_components_admin_uploadpanel",
+      "src_components_admin_uploadpanel_uploadpanel",
+      "src_components_admin_uploadpanel_uploadpanelprops",
+      "src_lib_security_file_validation",
+      "src_lib_security_file_validation_allowed_image_extensions",
+      "src_lib_security_file_validation_allowed_image_types",
+      "src_lib_security_file_validation_allowed_novel_extensions",
+      "src_lib_security_file_validation_allowed_novel_types",
+      "src_lib_security_file_validation_filevalidationresult",
+      "src_lib_security_file_validation_max_cover_size",
+      "src_lib_security_file_validation_max_image_size",
+      "src_lib_security_file_validation_max_novel_size",
+      "src_lib_security_file_validation_validatecoverfile",
+      "src_lib_security_file_validation_validateimagefile",
+      "src_lib_security_file_validation_validatenovelfile"
+    ],
+    "12": [
+      "src_app_chat_page",
+      "src_app_chat_page_chatcontent",
+      "src_app_chat_page_chatpage",
+      "src_components_chat_chatview",
+      "src_components_chat_chatview_chatview",
+      "src_components_chat_chatview_chatview_load",
+      "src_components_chat_chatview_chatview_openserver",
+      "src_components_chat_chatview_chatview_searchgifs",
+      "src_components_chat_chatview_chatview_send",
+      "src_components_chat_chatview_chatview_sendgif",
+      "src_components_chat_chatview_chatview_togglereaction",
+      "src_components_chat_chatview_gif",
+      "src_components_chat_chatview_message",
+      "src_components_chat_chatview_room"
+    ],
+    "13": [
+      "src_app_admin_content_page",
+      "src_app_admin_content_page_chapter",
+      "src_app_admin_content_page_series",
+      "src_components_admin_chapterform",
+      "src_components_admin_chapterform_chapterform",
+      "src_components_admin_chapterform_chapterform_autoslug",
+      "src_components_admin_chapterform_chapterform_handlesubmit",
+      "src_components_admin_chapterform_chapterformprops",
+      "src_components_admin_seriesform",
+      "src_components_admin_seriesform_seriesform",
+      "src_components_admin_seriesform_seriesform_autoslug",
+      "src_components_admin_seriesform_seriesform_handlesubmit",
+      "src_components_admin_seriesform_seriesformprops"
+    ],
+    "14": [
+      "src_app_api_user_stats_route",
+      "src_app_api_user_stats_route_get",
+      "src_lib_xp_calculate",
+      "src_lib_xp_calculate_calculatelevel",
+      "src_lib_xp_calculate_getlevelprogress",
+      "src_lib_xp_calculate_getrank",
+      "src_lib_xp_calculate_getxpforlevel",
+      "src_lib_xp_calculate_getxpfornextlevel",
+      "src_lib_xp_calculate_max_level",
+      "src_lib_xp_calculate_ranks",
+      "src_lib_xp_calculate_xp_rewards",
+      "tests_unit_xp_test"
+    ],
+    "15": [
+      "src_app_dashboard_page",
+      "src_app_dashboard_page_dashboardpage",
+      "src_app_dashboard_page_dashboardpage_load",
+      "src_app_dashboard_page_stats",
+      "src_features_auth_useauth",
+      "src_features_auth_useauth_profile",
+      "src_features_auth_useauth_useauth",
+      "src_features_auth_useauth_useauthreturn",
+      "src_lib_supabase_client",
+      "src_lib_supabase_client_createclient",
+      "src_lib_supabase_client_issupabaseconfigured"
+    ],
+    "16": [
+      "src_components_series_reviewsection",
+      "src_components_series_reviewsection_review",
+      "src_components_series_reviewsection_reviewsection",
+      "src_components_series_reviewsection_reviewsection_fetchreviews",
+      "src_components_series_reviewsection_reviewsection_moderate",
+      "src_components_series_reviewsection_reviewsection_submit",
+      "src_components_series_starrating",
+      "src_components_series_starrating_starrating",
+      "src_components_series_starrating_starrating_fetchratings",
+      "src_components_series_starrating_starrating_rate"
+    ],
+    "17": [
+      "src_app_support_page",
+      "src_app_support_page_supportpage",
+      "src_app_support_page_supportpage_donate",
+      "src_components_layout_topbar",
+      "src_components_layout_topbar_navlinks",
+      "src_components_layout_topbar_topbar",
+      "src_features_auth_usermenu",
+      "src_features_auth_usermenu_usermenu",
+      "src_features_auth_usermenu_usermenu_handleclickoutside"
+    ],
+    "18": [
+      "src_components_layout_toast",
+      "src_components_layout_toast_toast",
+      "src_components_layout_toast_toastprops",
+      "src_lib_utils",
+      "src_lib_utils_cn",
+      "src_lib_utils_formatbytes",
+      "src_lib_utils_formatdate",
+      "src_lib_utils_formatrelativetime",
+      "src_lib_utils_slugify"
+    ],
+    "19": [
+      "src_app_library_page",
+      "src_app_library_page_librarypage",
+      "src_app_library_page_libraryseries",
+      "src_app_library_page_loadseries",
+      "src_app_library_page_placeholderseries",
+      "src_app_library_page_seriesgrid",
+      "src_app_library_page_stars"
+    ],
+    "20": [
+      "src_lib_validation_feedback",
+      "src_lib_validation_feedback_banappealinput",
+      "src_lib_validation_feedback_banappealschema",
+      "src_lib_validation_feedback_feedbackinput",
+      "src_lib_validation_feedback_feedbackschema",
+      "src_lib_validation_feedback_reportinput",
+      "src_lib_validation_feedback_reportschema"
+    ],
+    "21": [
+      "src_app_series_slug_page",
+      "src_app_series_slug_page_generatestaticparams",
+      "src_app_series_slug_page_placeholder",
+      "src_app_series_slug_page_seriescontent",
+      "src_app_series_slug_page_seriespage",
+      "src_app_series_slug_page_seriesview"
+    ],
+    "22": [
+      "src_app_admin_content_page_admincontentpage",
+      "src_app_admin_content_page_admincontentpage_deletechapter",
+      "src_app_admin_content_page_admincontentpage_deleteseries",
+      "src_app_admin_content_page_admincontentpage_load",
+      "src_app_admin_content_page_admincontentpage_loadchapters"
+    ],
+    "23": [
+      "src_app_layout",
+      "src_app_layout_dmsans",
+      "src_app_layout_metadata",
+      "src_app_layout_rootlayout",
+      "src_app_layout_spacegrotesk"
+    ],
+    "24": [
+      "src_components_layout_themetoggle",
+      "src_components_layout_themetoggle_getserversnapshot",
+      "src_components_layout_themetoggle_getsnapshot",
+      "src_components_layout_themetoggle_subscribe",
+      "src_components_layout_themetoggle_themetoggle"
+    ],
+    "25": [
+      "src_lib_env",
+      "src_lib_env_env",
+      "src_lib_env_envschema"
+    ],
+    "26": [
+      "src_proxy",
+      "src_proxy_config",
+      "src_proxy_proxy"
+    ],
+    "27": [
+      "eslint_config",
+      "eslint_config_eslintconfig"
+    ],
+    "28": [
+      "next_config",
+      "next_config_nextconfig"
+    ],
+    "29": [
+      "scripts_split_pdf",
+      "scripts_split_pdf_main"
+    ],
+    "30": [
+      "src_app_api_gifs_route",
+      "src_app_api_gifs_route_get"
+    ],
+    "31": [
+      "playwright_config"
+    ],
+    "32": [
+      "public_audit_logs"
+    ],
+    "33": [
+      "public_ban_appeals"
+    ],
+    "34": [
+      "public_bookmarks"
+    ],
+    "35": [
+      "public_chapter_assets"
+    ],
+    "36": [
+      "public_chapters"
+    ],
+    "37": [
+      "public_chat_messages"
+    ],
+    "38": [
+      "public_chat_room_members"
+    ],
+    "39": [
+      "public_chat_rooms"
+    ],
+    "40": [
+      "public_feedback"
+    ],
+    "41": [
+      "public_message_reactions"
+    ],
+    "42": [
+      "public_moderation_actions"
+    ],
+    "43": [
+      "public_profiles"
+    ],
+    "44": [
+      "public_ratings"
+    ],
+    "45": [
+      "public_reading_progress"
+    ],
+    "46": [
+      "public_reports"
+    ],
+    "47": [
+      "public_review_replies"
+    ],
+    "48": [
+      "public_reviews"
+    ],
+    "49": [
+      "public_roles"
+    ],
+    "50": [
+      "public_series"
+    ],
+    "51": [
+      "public_user_roles"
+    ],
+    "52": [
+      "public_xp_ledger"
+    ],
+    "53": [
+      "supabase_migrations_0002_rls_policies"
+    ],
+    "54": [
+      "supabase_migrations_0002_rls_policies_sql_public_subscriptions"
+    ],
+    "55": [
+      "supabase_migrations_0003_subscriptions_unique_user"
+    ],
+    "56": [
+      "supabase_migrations_0003_subscriptions_unique_user_sql_public_subscriptions"
+    ],
+    "57": [
+      "tests_e2e_smoke_spec"
+    ],
+    "58": [
+      "tests_setup"
+    ],
+    "59": [
+      "vitest_config"
+    ]
+  },
+  "cohesion": {
+    "0": 0.06080246913580247,
+    "1": 0.04878048780487805,
+    "2": 0.11746031746031746,
+    "3": 0.09269162210338681,
+    "4": 0.06060606060606061,
+    "5": 0.10227272727272728,
+    "6": 0.07311827956989247,
+    "7": 0.06896551724137931,
+    "8": 0.1,
+    "9": 0.1323529411764706,
+    "10": 0.17142857142857143,
+    "11": 0.18095238095238095,
+    "12": 0.16483516483516483,
+    "13": 0.20512820512820512,
+    "14": 0.36363636363636365,
+    "15": 0.2909090909090909,
+    "16": 0.2222222222222222,
+    "17": 0.2777777777777778,
+    "18": 0.3055555555555556,
+    "19": 0.3333333333333333,
+    "20": 0.2857142857142857,
+    "21": 0.3333333333333333,
+    "22": 0.4,
+    "23": 0.4,
+    "24": 0.7,
+    "25": 0.6666666666666666,
+    "26": 0.6666666666666666,
+    "27": 1.0,
+    "28": 1.0,
+    "29": 1.0,
+    "30": 1.0,
+    "31": 1.0,
+    "32": 1.0,
+    "33": 1.0,
+    "34": 1.0,
+    "35": 1.0,
+    "36": 1.0,
+    "37": 1.0,
+    "38": 1.0,
+    "39": 1.0,
+    "40": 1.0,
+    "41": 1.0,
+    "42": 1.0,
+    "43": 1.0,
+    "44": 1.0,
+    "45": 1.0,
+    "46": 1.0,
+    "47": 1.0,
+    "48": 1.0,
+    "49": 1.0,
+    "50": 1.0,
+    "51": 1.0,
+    "52": 1.0,
+    "53": 1.0,
+    "54": 1.0,
+    "55": 1.0,
+    "56": 1.0,
+    "57": 1.0,
+    "58": 1.0,
+    "59": 1.0
+  },
+  "gods": [
+    {
+      "id": "src_lib_supabase_server_createclient",
+      "label": "createClient()",
+      "degree": 61
+    },
+    {
+      "id": "supabase_migrations_0001_initial_schema_public_profiles",
+      "label": "public.profiles",
+      "degree": 21
+    },
+    {
+      "id": "src_lib_permissions_guards_hasrole",
+      "label": "hasRole()",
+      "degree": 16
+    },
+    {
+      "id": "src_lib_security_rate_limit_checkratelimit",
+      "label": "checkRateLimit()",
+      "degree": 16
+    },
+    {
+      "id": "src_lib_security_rate_limit_getclientip",
+      "label": "getClientIp()",
+      "degree": 16
+    },
+    {
+      "id": "tsconfig_compileroptions",
+      "label": "compilerOptions",
+      "degree": 16
+    },
+    {
+      "id": "claude_wars",
+      "label": "WARS (World Anime Review System)",
+      "degree": 12
+    },
+    {
+      "id": "src_lib_supabase_admin_createadminclient",
+      "label": "createAdminClient()",
+      "degree": 11
+    },
+    {
+      "id": "src_features_auth_useauth_useauth",
+      "label": "useAuth()",
+      "degree": 11
+    },
+    {
+      "id": "src_components_layout_topbar_topbar",
+      "label": "TopBar()",
+      "degree": 10
+    }
+  ],
+  "surprises": [
+    {
+      "source": "WARS (World Anime Review System)",
+      "target": "typescript",
+      "source_files": [
+        "CLAUDE.md",
+        "package.json"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "crosses file types (code \u2194 doc); connects across different repos/directories; bridges separate communities; peripheral node `typescript` unexpectedly reaches hub `WARS (World Anime Review System)`"
+    },
+    {
+      "source": "stripe",
+      "target": "Donator role",
+      "source_files": [
+        "package.json",
+        "CLAUDE.md"
+      ],
+      "confidence": "INFERRED",
+      "relation": "conceptually_related_to",
+      "why": "inferred connection - not explicitly stated in source; crosses file types (code \u2194 doc); connects across different repos/directories"
+    },
+    {
+      "source": "Next.js project (create-next-app)",
+      "target": "Next.js App Router",
+      "source_files": [
+        "README.md",
+        "CLAUDE.md"
+      ],
+      "confidence": "INFERRED",
+      "relation": "conceptually_related_to",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities; peripheral node `Next.js App Router` unexpectedly reaches hub `Next.js project (create-next-app)`"
+    },
+    {
+      "source": "WARS Architecture",
+      "target": "stripe",
+      "source_files": [
+        "CLAUDE.md",
+        "package.json"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "crosses file types (code \u2194 doc); connects across different repos/directories"
+    },
+    {
+      "source": "WARS (World Anime Review System)",
+      "target": "stripe",
+      "source_files": [
+        "CLAUDE.md",
+        "package.json"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "crosses file types (code \u2194 doc); connects across different repos/directories"
+    }
+  ],
+  "tokens": {
+    "input": 0,
+    "output": 0
+  }
+}

@@ -1,0 +1,222 @@
+[
+ {
+  "id": "P001",
+  "name": "Isla",
+  "age": 19,
+  "segment": "Reader-first friend",
+  "income": 3000,
+  "behaviour": "Lurker",
+  "behaviour_how": "Reads everything, says nothing; chat activity from them is rare.",
+  "objection": "Discord + a shared folder already works fine",
+  "habit": "you switch apps between the reader and the chat without thinking"
+ },
+ {
+  "id": "P002",
+  "name": "Hamza",
+  "age": 27,
+  "segment": "Reader-first friend",
+  "income": 40000,
+  "behaviour": "Lives in Discord",
+  "behaviour_how": "The group chat is already their main app; anything new has to beat opening Discord.",
+  "objection": "Is this private really, or does a link leak it",
+  "habit": "you switch apps between the reader and the chat without thinking"
+ },
+ {
+  "id": "P003",
+  "name": "Arjun",
+  "age": 25,
+  "segment": "Casual drop-in",
+  "income": 6000,
+  "behaviour": "Lurker",
+  "behaviour_how": "Reads everything, says nothing; chat activity from them is rare.",
+  "objection": "It only has Death Note and ORV - why not everything",
+  "habit": "you read before bed on your phone"
+ },
+ {
+  "id": "P004",
+  "name": "Andre",
+  "age": 20,
+  "segment": "Reader-first friend",
+  "income": 0,
+  "behaviour": "Setup is fine, thanks",
+  "behaviour_how": "Happy with their current folder-and-chat arrangement; slow to move tools.",
+  "objection": "Will the others actually use it, or does it die in two weeks",
+  "habit": "you read before bed on your phone"
+ },
+ {
+  "id": "P005",
+  "name": "Dev",
+  "age": 24,
+  "segment": "Discord-native friend",
+  "income": 40000,
+  "behaviour": "Official-sources only",
+  "behaviour_how": "Uses VIZ, Manga Plus, J-Novel Club or buys volumes; uneasy about ripped files.",
+  "objection": "Discord + a shared folder already works fine",
+  "habit": "you switch apps between the reader and the chat without thinking"
+ },
+ {
+  "id": "P006",
+  "name": "Seth",
+  "age": 27,
+  "segment": "Casual drop-in",
+  "income": 0,
+  "behaviour": "Phone-only reader",
+  "behaviour_how": "Reads on a phone, often at night; if the mobile reader is bad, they are gone.",
+  "objection": "I do not want my reading or chat activity stored somewhere random",
+  "habit": "you switch apps between the reader and the chat without thinking"
+ },
+ {
+  "id": "P007",
+  "name": "Lina",
+  "age": 21,
+  "segment": "Official-source reader",
+  "income": 48000,
+  "behaviour": "Lurker",
+  "behaviour_how": "Reads everything, says nothing; chat activity from them is rare.",
+  "objection": "I do not want my reading or chat activity stored somewhere random",
+  "habit": "you are in the group chat most days anyway"
+ },
+ {
+  "id": "P008",
+  "name": "Rafael",
+  "age": 22,
+  "segment": "Discord-native friend",
+  "income": 24000,
+  "behaviour": "Lives in Discord",
+  "behaviour_how": "The group chat is already their main app; anything new has to beat opening Discord.",
+  "objection": "I do not want my reading or chat activity stored somewhere random",
+  "habit": "if a new tool is annoying once, you go back to the old one"
+ },
+ {
+  "id": "P009",
+  "name": "Olivia",
+  "age": 23,
+  "segment": "Discord-native friend",
+  "income": 35000,
+  "behaviour": "Binge reader",
+  "behaviour_how": "Reads dozens of chapters in one sitting when a series grabs them.",
+  "objection": "I do not want my reading or chat activity stored somewhere random",
+  "habit": "someone drops a chapter link and half the chat reacts"
+ },
+ {
+  "id": "P010",
+  "name": "Emil",
+  "age": 24,
+  "segment": "Discord-native friend",
+  "income": 24000,
+  "behaviour": "Lives in Discord",
+  "behaviour_how": "The group chat is already their main app; anything new has to beat opening Discord.",
+  "objection": "It only has Death Note and ORV - why not everything",
+  "habit": "if a new tool is annoying once, you go back to the old one"
+ },
+ {
+  "id": "P011",
+  "name": "Wes",
+  "age": 22,
+  "segment": "Reader-first friend",
+  "income": 28000,
+  "behaviour": "Binge reader",
+  "behaviour_how": "Reads dozens of chapters in one sitting when a series grabs them.",
+  "objection": "Another site, another login - I will forget it exists",
+  "habit": "you read before bed on your phone"
+ },
+ {
+  "id": "P012",
+  "name": "Malik",
+  "age": 20,
+  "segment": "Discord-native friend",
+  "income": 42000,
+  "behaviour": "Official-sources only",
+  "behaviour_how": "Uses VIZ, Manga Plus, J-Novel Club or buys volumes; uneasy about ripped files.",
+  "objection": "Discord + a shared folder already works fine",
+  "habit": "you are in the group chat most days anyway"
+ },
+ {
+  "id": "P013",
+  "name": "Sam",
+  "age": 25,
+  "segment": "Discord-native friend",
+  "income": 18000,
+  "behaviour": "Lives in Discord",
+  "behaviour_how": "The group chat is already their main app; anything new has to beat opening Discord.",
+  "objection": "It only has Death Note and ORV - why not everything",
+  "habit": "you switch apps between the reader and the chat without thinking"
+ },
+ {
+  "id": "P014",
+  "name": "Ethan",
+  "age": 30,
+  "segment": "Official-source reader",
+  "income": 56000,
+  "behaviour": "Lives in Discord",
+  "behaviour_how": "The group chat is already their main app; anything new has to beat opening Discord.",
+  "objection": "Is this private really, or does a link leak it",
+  "habit": "if a new tool is annoying once, you go back to the old one"
+ },
+ {
+  "id": "P015",
+  "name": "Mateo",
+  "age": 21,
+  "segment": "Discord-native friend",
+  "income": 36000,
+  "behaviour": "Lives in Discord",
+  "behaviour_how": "The group chat is already their main app; anything new has to beat opening Discord.",
+  "objection": "Discord + a shared folder already works fine",
+  "habit": "someone drops a chapter link and half the chat reacts"
+ },
+ {
+  "id": "P016",
+  "name": "Min",
+  "age": 26,
+  "segment": "Reader-first friend",
+  "income": 4000,
+  "behaviour": "Phone-only reader",
+  "behaviour_how": "Reads on a phone, often at night; if the mobile reader is bad, they are gone.",
+  "objection": "Reading on the site has to be better than what I use now, on my phone",
+  "habit": "you are in the group chat most days anyway"
+ },
+ {
+  "id": "P017",
+  "name": "Mei",
+  "age": 29,
+  "segment": "Reader-first friend",
+  "income": 55000,
+  "behaviour": "Phone-only reader",
+  "behaviour_how": "Reads on a phone, often at night; if the mobile reader is bad, they are gone.",
+  "objection": "Discord + a shared folder already works fine",
+  "habit": "you switch apps between the reader and the chat without thinking"
+ },
+ {
+  "id": "P018",
+  "name": "Farah",
+  "age": 27,
+  "segment": "Casual drop-in",
+  "income": 13000,
+  "behaviour": "Phone-only reader",
+  "behaviour_how": "Reads on a phone, often at night; if the mobile reader is bad, they are gone.",
+  "objection": "I do not want my reading or chat activity stored somewhere random",
+  "habit": "if a new tool is annoying once, you go back to the old one"
+ },
+ {
+  "id": "P019",
+  "name": "Idris",
+  "age": 19,
+  "segment": "Casual drop-in",
+  "income": 15000,
+  "behaviour": "Phone-only reader",
+  "behaviour_how": "Reads on a phone, often at night; if the mobile reader is bad, they are gone.",
+  "objection": "Is this private really, or does a link leak it",
+  "habit": "if a new tool is annoying once, you go back to the old one"
+ },
+ {
+  "id": "P020",
+  "name": "Noor",
+  "age": 19,
+  "segment": "Discord-native friend",
+  "income": 31000,
+  "behaviour": "Binge reader",
+  "behaviour_how": "Reads dozens of chapters in one sitting when a series grabs them.",
+  "objection": "Another site, another login - I will forget it exists",
+  "habit": "you are in the group chat most days anyway"
+ }
+]

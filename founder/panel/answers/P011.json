@@ -1,0 +1,13 @@
+{
+  "id": "P011",
+  "buys": true,
+  "purchases_first_month": 1,
+  "reason_code": "convenience",
+  "reason": "It's free and it kills my Discord-plus-some-reader-site shuffle — the thing remembers where I stopped and the chat sits right next to the series I'm actually reading, which nothing in my setup does now.",
+  "objection": "I've watched group projects die in two weeks — if nobody else in the chat actually posts there, I'm just reading alone in another empty tab I'll forget I ever opened.",
+  "would_change_my_mind": "If the group chat actually moves over — real messages and links in there for a couple of weeks instead of Discord — I'd stop juggling and stay; if it's dead by week two I'm gone anyway.",
+  "price_too_cheap": 1,
+  "price_cheap": 3,
+  "price_expensive": 7,
+  "price_too_expensive": 10
+}

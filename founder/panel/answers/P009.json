@@ -1,0 +1,13 @@
+{
+  "id": "P009",
+  "buys": true,
+  "purchases_first_month": 1,
+  "reason_code": "convenience",
+  "reason": "It's free and it fixes two things I fight with every week — losing my spot mid-binge and scrolling Discord to find whoever posted the chapter link. I'd take the invite and actually use it.",
+  "objection": "A private site you run yourself still means my reading history and chat are sitting on some random server I know nothing about, and if you get bored of maintaining it my stuff just vanishes.",
+  "would_change_my_mind": "Finding out you (or anyone) can browse my chat and reading history whenever you want — that would make me skip the invite.",
+  "price_too_cheap": 1,
+  "price_cheap": 3,
+  "price_expensive": 8,
+  "price_too_expensive": 12
+}

@@ -1,0 +1,13 @@
+{
+  "id": "P007",
+  "buys": true,
+  "purchases_first_month": 1,
+  "reason_code": "convenience",
+  "reason": "It's free, it merges the Discord-plus-random-reader-tab shuffle we already do every week, and it remembers where I stopped reading — and if it sucks, the founder just kills it, so clicking the link costs me nothing.",
+  "objection": "I don't love that my reading history and everything I say in chat ends up stored on a server run by someone in the group — invite-only doesn't tell me who actually holds the logs or what happens to them.",
+  "would_change_my_mind": "If I found out the chat logs or reading history aren't actually private — or that the files come from somewhere sketchy — I'm out immediately.",
+  "price_too_cheap": 1,
+  "price_cheap": 3,
+  "price_expensive": 7,
+  "price_too_expensive": 12
+}

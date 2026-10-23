@@ -1,0 +1,13 @@
+{
+  "id": "P013",
+  "buys": true,
+  "purchases_first_month": 1,
+  "reason_code": "convenience",
+  "reason": "It's free and it kills the app-juggling - Death Note and ORV in one scroll where it remembers my spot, with the chat sitting right next to it instead of me alt-tabbing to Discord every page. Costs nothing to try, so I'd click the link and read.",
+  "objection": "It only has Death Note and ORV - why not everything? And my actual group already lives in our Discord channel, so if nobody else migrates, the chat room is just a dead second place I have to check.",
+  "would_change_my_mind": "If the group keeps talking in Discord anyway and the site's chat stays empty, I'd stop opening it within a week.",
+  "price_too_cheap": 1,
+  "price_cheap": 2,
+  "price_expensive": 5,
+  "price_too_expensive": 8
+}

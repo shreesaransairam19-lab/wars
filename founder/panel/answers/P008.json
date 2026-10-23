@@ -1,0 +1,13 @@
+{
+  "id": "P008",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I already have Discord and a reader site for the stuff I read, so I don't see a reason to switch to some random new site just for these two series.",
+  "objection": "I don't want my reading or chat activity stored somewhere random, and 'invite only' doesn't really tell me much about who actually runs it.",
+  "would_change_my_mind": "If it was hosted by someone I actually knew and trusted, and I could see exactly what data was being collected",
+  "price_too_cheap": 0,
+  "price_cheap": 1,
+  "price_expensive": 2,
+  "price_too_expensive": 3
+}

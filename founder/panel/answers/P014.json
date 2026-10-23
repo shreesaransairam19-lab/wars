@@ -1,0 +1,13 @@
+{
+  "id": "P014",
+  "buys": true,
+  "purchases_first_month": 1,
+  "reason_code": "trust",
+  "reason": "It's free and it kills two annoyances I actually have — hunting for reader sites and losing my place across series. The chat part I don't need, Discord already does that, but the reader alone is worth one try.",
+  "objection": "Invite-only is only as private as the link — if someone forwards it, or you kick someone and their link still works, then it's not private, it's just a site with extra steps.",
+  "would_change_my_mind": "If every invite link is unique, revocable, and dies the second you remove someone, the privacy doubt goes away completely.",
+  "price_too_cheap": 1,
+  "price_cheap": 3,
+  "price_expensive": 7,
+  "price_too_expensive": 12
+}
