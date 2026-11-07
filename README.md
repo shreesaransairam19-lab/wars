@@ -116,7 +116,23 @@ The source PDF/EPUB are not in this repository.
 
 ## Deploy
 
-Vercel Hobby (private usage). Add every variable from `.env.example` in the Vercel project settings, point the Stripe webhook at `/api/stripe/webhook`, and apply the migrations to the production Supabase project.
+The project can run on the free tiers of Vercel, Render, and Supabase. Supabase is the single shared Postgres/Auth/Storage service; do not create a separate Render database because the app would not synchronize two independent databases.
+
+### Render free web service
+
+This repository includes a root-level `render.yaml` Blueprint. In Render, create a new Blueprint from this GitHub repository and select the free plan. The service root is `wars/`; Render uses `npm ci` and `npm start`. The free service filesystem is temporary, so reader uploads must be stored in the configured Supabase Storage buckets (`covers`, `chapter-assets`, `avatars`), not on local disk. Free Render services can spin down when idle and may take a little longer to wake.
+
+When Render asks for environment values, use the Supabase project URL, anon key, and service-role key. Keep the service-role key private. Once Render assigns its URL, enter it as `NEXT_PUBLIC_APP_URL` in Render. Stripe keys and Giphy are optional and may be left blank.
+
+### Vercel
+
+Connect this same GitHub repository to Vercel and set the project root directory to `wars/`. Add `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` in Vercel's environment settings. Set `NEXT_PUBLIC_APP_URL` to the Vercel URL. Configure Supabase Auth's Site URL and redirect allow-list with both the Vercel and Render URLs so either host can sign users in. Both hosts use the same Supabase accounts, content, and chat; sign-in cookies are per hostname.
+
+### Supabase setup
+
+Use a Supabase Free project. Disable email confirmation under **Authentication → Providers → Email** because WARS uses username sign-in with synthetic addresses. Apply the SQL files in `wars/supabase/migrations/` in order using the Supabase SQL Editor, then create the private storage buckets listed above. Supabase Free has limited storage and may pause inactive projects; it is suitable for initial testing, not an uptime guarantee.
+
+Vercel Hobby, Render Free, and Supabase Free have usage limits. No paid service is configured. Stripe integrations remain disabled unless you add Stripe keys.
 
 ---
 
