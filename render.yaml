@@ -5,7 +5,7 @@ services:
     plan: free
     region: singapore
     rootDir: wars
-    buildCommand: npm ci --legacy-peer-deps
+    buildCommand: npm ci --legacy-peer-deps && npm run build
     startCommand: npm start
     healthCheckPath: /
     envVars:
