@@ -22,11 +22,13 @@ export function TopBar() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:h-[82px] md:px-6 lg:px-10">
         {/* Brand */}
         <Link href="/" className="flex items-center gap-3" aria-label="WARS home">
-          <div className="grid h-8 w-8 place-items-center rounded-[10px] bg-accent text-xl text-[#171a11] md:h-9 md:w-9">
-            W
-          </div>
+          <span
+            aria-hidden="true"
+            className="h-9 w-9 shrink-0 rounded-xl border border-line bg-black bg-cover bg-center shadow-[0_0_12px_rgba(155,140,255,0.22)] md:h-10 md:w-10"
+            style={{ backgroundImage: "url('/wars-logo.jpeg')" }}
+          />
           <div className="flex flex-col gap-px">
-            <strong className="font-heading text-lg leading-none tracking-tight md:text-xl">
+            <strong className="font-heading text-lg leading-none tracking-[0.12em] text-foreground md:text-xl">
               WARS
             </strong>
             <small className="text-[8px] font-semibold uppercase tracking-wider text-muted md:text-[9px]">
