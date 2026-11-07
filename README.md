@@ -120,7 +120,7 @@ The project can run on the free tiers of Vercel, Render, and Supabase. Supabase 
 
 ### Render free web service
 
-This repository includes a root-level `render.yaml` Blueprint. In Render, create a new Blueprint from this GitHub repository and select the free plan. The service root is `wars/`; Render uses `npm ci --legacy-peer-deps && npm run build` and `npm start`. The free service filesystem is temporary, so reader uploads must be stored in the configured Supabase Storage buckets (`covers`, `chapter-assets`, `avatars`), not on local disk. Free Render services can spin down when idle and may take a little longer to wake.
+This repository includes a root-level `render.yaml` Blueprint. In Render, create a new Blueprint from this GitHub repository and select the free plan. The service root is `wars/`; Render uses `npm ci --legacy-peer-deps --include=dev && npm run build` and `npm start`. The free service filesystem is temporary, so reader uploads must be stored in the configured Supabase Storage buckets (`covers`, `chapter-assets`, `avatars`), not on local disk. Free Render services can spin down when idle and may take a little longer to wake.
 
 When Render asks for environment values, use the Supabase project URL, anon key, and service-role key. Keep the service-role key private. Once Render assigns its URL, enter it as `NEXT_PUBLIC_APP_URL` in Render. Stripe keys and Giphy are optional and may be left blank.
 
