@@ -25,9 +25,13 @@ export async function getUserRoles(userId: string): Promise<RoleName[]> {
     .eq("user_id", userId);
 
   if (!data) return [];
-  return data.flatMap(
-    (ur: { roles: { name: string }[] }) =>
-      ur.roles.map((r) => r.name as RoleName)
+  const roleRows = data as {
+    roles: { name: string } | { name: string }[] | null;
+  }[];
+  return roleRows.flatMap(({ roles }) =>
+    (Array.isArray(roles) ? roles : roles ? [roles] : []).map(
+      (role) => role.name as RoleName
+    )
   );
 }
 
