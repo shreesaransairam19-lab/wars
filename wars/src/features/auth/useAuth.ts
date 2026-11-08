@@ -41,9 +41,14 @@ export function useAuth(): UseAuthReturn {
     ]);
 
     setProfile(profileRes.data ?? null);
+    const roleRows = (rolesRes.data ?? []) as {
+      roles: { name: string } | { name: string }[] | null;
+    }[];
     setRoles(
-      (rolesRes.data ?? []).flatMap(
-        (ur: { roles: { name: string }[] }) => ur.roles.map((r) => r.name)
+      roleRows.flatMap(({ roles }) =>
+        (Array.isArray(roles) ? roles : roles ? [roles] : []).map(
+          (role) => role.name
+        )
       )
     );
   }, []);
