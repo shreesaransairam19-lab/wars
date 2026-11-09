@@ -18,7 +18,7 @@ export async function GET(request: Request) {
 
   const query = supabase
     .from("chapters")
-    .select(canManage ? "*, chapter_assets(id, asset_type, storage_path)" : "*, chapter_assets(count)")
+    .select(canManage ? "*, chapter_assets(id, asset_type, storage_path, external_url, mime_type)" : "*, chapter_assets(count)")
     .eq("series_id", seriesId)
     .order("chapter_number", { ascending: true });
   const { data, error } = await query;

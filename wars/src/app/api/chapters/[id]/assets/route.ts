@@ -8,20 +8,12 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const supabase = await createClient();
   const { id } = await params;
 
-  // Allow anonymous read of assets for published chapters? No — require auth for private content
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  // Verify chapter exists and is published
-  const { data: chapter } = await supabase
+  const admin = createAdminClient();
+  // Published chapter files are public reading content. Resolve them through
+  // the server client so RLS cannot make a valid library chapter appear missing.
+  const { data: chapter } = await admin
     .from("chapters")
     .select("id, series_id")
     .eq("id", id)
@@ -31,9 +23,16 @@ export async function GET(
   if (!chapter) {
     return NextResponse.json({ error: "Chapter not found" }, { status: 404 });
   }
+  const { data: series } = await admin
+    .from("series")
+    .select("id")
+    .eq("id", chapter.series_id)
+    .eq("status", "published")
+    .maybeSingle();
+  if (!series) return NextResponse.json({ error: "Chapter not found" }, { status: 404 });
 
   // Fetch assets
-  const { data: assets, error } = await supabase
+  const { data: assets, error } = await admin
     .from("chapter_assets")
     .select("*")
     .eq("chapter_id", id)
@@ -47,11 +46,15 @@ export async function GET(
   const expiresIn = 3600;
   const signedAssets = await Promise.all(
     (assets ?? []).map(async (asset) => {
+      if (asset.external_url) {
+        return { ...asset, signed_url: asset.external_url, expires_in: null };
+      }
       const slashIndex = asset.storage_path.indexOf("/");
+      if (slashIndex < 1) return { ...asset, signed_url: null, expires_in: null };
       const bucket = asset.storage_path.slice(0, slashIndex);
       const path = asset.storage_path.slice(slashIndex + 1);
 
-      const { data: signed } = await supabase.storage
+      const { data: signed } = await admin.storage
         .from(bucket)
         .createSignedUrl(path, expiresIn);
 
@@ -84,18 +87,20 @@ export async function DELETE(
   const admin = createAdminClient();
   const { data: asset, error: findError } = await admin
     .from("chapter_assets")
-    .select("id, storage_path")
+    .select("id, storage_path, external_url")
     .eq("id", assetId)
     .eq("chapter_id", chapterId)
     .maybeSingle();
   if (findError || !asset) return NextResponse.json({ error: "Asset not found" }, { status: 404 });
 
-  const slash = asset.storage_path.indexOf("/");
-  if (slash < 1) return NextResponse.json({ error: "Invalid stored asset path" }, { status: 500 });
-  const bucket = asset.storage_path.slice(0, slash);
-  const path = asset.storage_path.slice(slash + 1);
-  const { error: storageError } = await admin.storage.from(bucket).remove([path]);
-  if (storageError) return NextResponse.json({ error: `Could not remove stored file: ${storageError.message}` }, { status: 500 });
+  if (!asset.external_url) {
+    const slash = asset.storage_path.indexOf("/");
+    if (slash < 1) return NextResponse.json({ error: "Invalid stored asset path" }, { status: 500 });
+    const bucket = asset.storage_path.slice(0, slash);
+    const path = asset.storage_path.slice(slash + 1);
+    const { error: storageError } = await admin.storage.from(bucket).remove([path]);
+    if (storageError) return NextResponse.json({ error: `Could not remove stored file: ${storageError.message}` }, { status: 500 });
+  }
 
   const { error: deleteError } = await admin.from("chapter_assets").delete().eq("id", assetId);
   if (deleteError) return NextResponse.json({ error: "File removed, but its chapter record could not be deleted" }, { status: 500 });

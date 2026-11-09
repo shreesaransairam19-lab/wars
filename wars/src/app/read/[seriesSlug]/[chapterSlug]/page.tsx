@@ -85,10 +85,10 @@ async function ChapterReader({ params }: { params: Promise<Params> }) {
   {
     const { data: assets } = await admin
       .from("chapter_assets")
-      .select("storage_path, mime_type")
+      .select("storage_path, external_url, mime_type")
       .eq("chapter_id", chapter.id)
       .eq("asset_type", "file")
-      .order("order_index", { ascending: true });
+      .order("created_at", { ascending: false });
 
     const files = assets ?? [];
     const pdf = files.find((asset) => asset.mime_type === "application/pdf");
@@ -96,7 +96,7 @@ async function ChapterReader({ params }: { params: Promise<Params> }) {
     const asset = series.content_type === "manga" ? pdf : epub ?? pdf;
 
     if (asset) {
-      const signedUrl = await createSignedStorageUrl(asset.storage_path);
+      const signedUrl = asset.external_url ?? await createSignedStorageUrl(asset.storage_path);
       if (asset.mime_type === "application/pdf") pdfSignedUrl = signedUrl;
       else epubSignedUrl = signedUrl;
     }

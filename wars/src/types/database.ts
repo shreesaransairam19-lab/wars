@@ -160,8 +160,9 @@ export interface Database {
           chapter_id: string;
           asset_type: string;
           storage_path: string;
+          external_url: string | null;
           mime_type: string;
-          byte_size: number;
+          byte_size: number | null;
           page_number: number | null;
           order_index: number;
           created_at: string;
@@ -171,8 +172,9 @@ export interface Database {
           chapter_id: string;
           asset_type: string;
           storage_path: string;
+          external_url?: string | null;
           mime_type: string;
-          byte_size: number;
+          byte_size?: number | null;
           page_number?: number | null;
           order_index?: number;
           created_at?: string;
@@ -182,8 +184,9 @@ export interface Database {
           chapter_id?: string;
           asset_type?: string;
           storage_path?: string;
+          external_url?: string | null;
           mime_type?: string;
-          byte_size?: number;
+          byte_size?: number | null;
           page_number?: number | null;
           order_index?: number;
           created_at?: string;

@@ -8,6 +8,7 @@ import { SeriesForm } from "@/components/admin/SeriesForm";
 import { ChapterForm } from "@/components/admin/ChapterForm";
 import { UploadPanel } from "@/components/admin/UploadPanel";
 import { CoverUpload } from "@/components/admin/CoverUpload";
+import { ExternalPdfLinkForm } from "@/components/admin/ExternalPdfLinkForm";
 import { ChevronDown, ChevronRight, Trash2 } from "lucide-react";
 
 interface Series {
@@ -26,7 +27,7 @@ interface Chapter {
   slug: string;
   chapter_number: number;
   status: string;
-  chapter_assets?: { id: string; asset_type: string; storage_path: string }[];
+  chapter_assets?: { id: string; asset_type: string; storage_path: string; external_url?: string | null; mime_type?: string }[];
 }
 
 export default function AdminContentPage() {
@@ -340,18 +341,24 @@ export default function AdminContentPage() {
                                   </button>
                                 </div>
                               </div>
+                              <ExternalPdfLinkForm
+                                chapterId={chapter.id}
+                                onAdded={() => void refreshChapters(series.id)}
+                              />
                               {(chapter.chapter_assets ?? []).length > 0 && (
                                 <ul className="mt-2 space-y-1 border-t border-line pt-2">
                                   {chapter.chapter_assets?.map((asset) => (
                                     <li key={asset.id} className="flex items-center justify-between gap-2 text-[10px]">
                                       <span className="truncate text-muted">
-                                        {asset.asset_type === "file" ? (asset.storage_path.toLowerCase().endsWith(".pdf") ? "PDF" : "EPUB") : "Page"} · {asset.storage_path.split("/").at(-1)}
+                                        {asset.external_url
+                                          ? `External PDF · ${new URL(asset.external_url).hostname}`
+                                          : `${asset.asset_type === "file" ? (asset.storage_path.toLowerCase().endsWith(".pdf") ? "PDF" : "EPUB") : "Page"} · ${asset.storage_path.split("/").at(-1)}`}
                                       </span>
                                       <button
                                         type="button"
                                         onClick={() => removeAsset(chapter.id, asset.id)}
                                         className="rounded border border-[#704044] bg-[#332329] p-1 text-[#ffb2b2]"
-                                        aria-label={`Remove ${asset.storage_path.split("/").at(-1)}`}
+                                        aria-label={`Remove ${asset.external_url ? "external PDF link" : asset.storage_path.split("/").at(-1)}`}
                                       >
                                         <Trash2 className="h-3 w-3" />
                                       </button>
