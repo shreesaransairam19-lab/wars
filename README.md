@@ -1,8 +1,6 @@
 # WARS — World Anime Review System
 
-A private manga / light-novel reader and small community site: Next.js 16 (App Router, Turbopack), React 19, Tailwind 4, Supabase Free (Auth / Postgres / Storage / Realtime), Stripe, and Giphy.
-
-Test content: **Death Note** (manga) and **Omniscient Reader's Viewpoint** (light novel). Target scale: ~10 users, ₹0 hosting.
+WARS is a community site with separate manga/light-novel and anime libraries, reviews, and live chat. It uses Next.js 16, React 19, Tailwind 4, Supabase, and optional Stripe/Giphy integrations.
 
 ---
 
@@ -39,7 +37,7 @@ The app degrades gracefully without `.env.local`: Supabase pages show placeholde
 | `npm run lint` | ESLint |
 | `npm run test` | Vitest unit tests (30) |
 | `npm run test:e2e` | Playwright E2E (10 smoke tests) |
-| `npm run db:migrate` | `supabase migration up` |
+| `npm run db:migrate` | Push pending migrations to the linked Supabase project |
 | `npm run db:seed` | `supabase db seed` |
 
 ### Tests
@@ -93,7 +91,7 @@ Never commit `.env.local` or the service-role key.
    npx supabase link --project-ref <project-ref>
    npm run db:migrate
    ```
-5. Create private storage buckets: `covers`, `chapter-assets`, `avatars`.
+5. The migrations create the private storage buckets: `covers`, `chapter-assets`, `avatars`.
 6. Register your account, then grant it the `owner` role (no automatic bootstrap):
    ```sql
    insert into public.user_roles (user_id, role_id)
@@ -101,16 +99,7 @@ Never commit `.env.local` or the service-role key.
    where p.username = '<your-username>' and r.name = 'owner';
    ```
 
-Migrations: `0001` schema + seed, `0002` RLS policies, `0003` Stripe subscription uniqueness. They have **not** been applied to a live project yet.
-
----
-
-## Test content
-
-- **Death Note**: split the source PDF into WebP chapter pages with `node scripts/split-pdf.mjs`, then upload via `/admin/content`.
-- **ORV**: upload the EPUB as-is to the `chapter-assets` bucket via `/admin/content`.
-
-The source PDF/EPUB are not in this repository.
+Migrations include the separate manga and anime content types. Apply all pending files in `wars/supabase/migrations/` before adding anime titles.
 
 ---
 
@@ -138,6 +127,4 @@ Vercel Hobby, Render Free, and Supabase Free have usage limits. No paid service 
 
 ## Current status
 
-Verified locally: lint clean, 30/30 unit tests, 10/10 Playwright smoke tests, production build passes.
-
-Blocked on: Supabase project + migrations, source content files, password-reset flow (not implemented; synthetic emails block Supabase email reset), and Vercel deployment. See `WARS_PLAN.md` §0.1 for the full status table.
+The latest code is pushed to the primary and Vercel-connected repositories. The production database migration and current deployment status still need confirmation in Supabase and Vercel. See `WARS_PLAN.md` §0.1 for the full status table.

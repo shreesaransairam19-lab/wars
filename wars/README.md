@@ -1,8 +1,6 @@
 # WARS — World Anime Review System
 
-Private manga / light-novel reader and community for ~10 users. Next.js 16 (App Router, Turbopack), Supabase Free (Auth/Postgres/Storage/Realtime), Stripe, Giphy, Tailwind 4.
-
-Test content: Death Note (manga) and Omniscient Reader's Viewpoint (light novel).
+WARS is a community platform with separate manga/light-novel and anime libraries, reviews, and live chat. Built with Next.js 16, React 19, Tailwind 4, and Supabase.
 
 ## Quick start
 
@@ -25,7 +23,7 @@ The app runs without `.env.local`: Supabase-backed pages fall back to placeholde
 | `npm run test` | Vitest unit tests |
 | `npm run test:watch` | Vitest in watch mode |
 | `npm run test:e2e` | Playwright E2E (needs dev server or starts one) |
-| `npm run db:migrate` | `supabase migration up` |
+| `npm run db:migrate` | Push pending SQL migrations to the linked Supabase project |
 | `npm run db:seed` | `supabase db seed` |
 
 ## Environment
@@ -47,16 +45,7 @@ npx supabase link --project-ref <project-ref>
 npm run db:migrate
 ```
 
-Then create the private storage buckets: `covers`, `chapter-assets`, `avatars`.
-
-Migrations live in `supabase/migrations/` (`0001` schema + seed, `0002` RLS, `0003` Stripe uniqueness). They have not been applied to a live project yet.
-
-## Test content
-
-- Death Note: split the source PDF into WebP chapter pages with `node scripts/split-pdf.mjs`, then upload through `/admin/content`.
-- ORV: upload the EPUB as-is to the `chapter-assets` bucket through `/admin/content`.
-
-The source PDF/EPUB are not in this repo.
+The migrations create the required private storage buckets and policies. They also define the separate manga and anime content types. Apply pending migrations before adding anime titles.
 
 ## Tests
 
@@ -70,7 +59,7 @@ npm run test:e2e                              # 10 smoke tests
 
 ## Deploy
 
-Vercel Hobby. Set every variable from `.env.example` in the project settings, point the Stripe webhook at `/api/stripe/webhook`, and re-run the migrations against the production Supabase project.
+Vercel Hobby. Set every variable from `.env.example` in the project settings, point the Stripe webhook at `/api/stripe/webhook`, and apply pending migrations to the production Supabase project.
 
 ## Status
 
