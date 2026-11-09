@@ -426,6 +426,57 @@ body {
   }
 }
 
+.home-menu-card {
+  isolation: isolate;
+  overflow: hidden;
+  background-color: #19191f;
+  background-image:
+    linear-gradient(180deg, rgba(13, 13, 20, .24) 0%, rgba(13, 13, 20, .58) 42%, rgba(18, 18, 25, .97) 100%),
+    var(--menu-card-art, transparent),
+    var(--menu-card-fallback);
+  background-position: center;
+  background-size: cover;
+  transition: background-color .2s ease, box-shadow .2s ease;
+}
+
+.home-menu-card:hover {
+  box-shadow: 0 16px 36px rgba(0, 0, 0, .26);
+}
+
+.home-menu-card--manga {
+  --menu-card-fallback:
+    radial-gradient(ellipse at 82% 19%, rgba(190, 88, 235, .3), transparent 48%),
+    radial-gradient(ellipse at 15% 76%, rgba(112, 66, 191, .2), transparent 46%),
+    linear-gradient(140deg, #302440, #1b1924 65%, #292136);
+}
+
+.home-menu-card--anime {
+  --menu-card-fallback:
+    radial-gradient(ellipse at 76% 16%, rgba(70, 146, 255, .34), transparent 48%),
+    radial-gradient(ellipse at 20% 78%, rgba(55, 224, 204, .16), transparent 42%),
+    linear-gradient(140deg, #1d3150, #191b29 63%, #182e3a);
+}
+
+.home-menu-card--reviews {
+  --menu-card-fallback:
+    radial-gradient(ellipse at 82% 19%, rgba(245, 178, 55, .32), transparent 47%),
+    radial-gradient(ellipse at 18% 77%, rgba(238, 112, 130, .17), transparent 44%),
+    linear-gradient(140deg, #3a3022, #1c1a23 63%, #302333);
+}
+
+.home-menu-card--chat {
+  --menu-card-fallback:
+    radial-gradient(ellipse at 80% 18%, rgba(56, 212, 184, .28), transparent 48%),
+    radial-gradient(ellipse at 18% 76%, rgba(243, 105, 145, .18), transparent 44%),
+    linear-gradient(140deg, #193a3b, #191b25 62%, #35212d);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-menu-card {
+    background-image: linear-gradient(180deg, rgba(13, 13, 20, .24) 0%, rgba(13, 13, 20, .58) 42%, rgba(18, 18, 25, .97) 100%), var(--menu-card-fallback);
+  }
+}
+
 h1, h2, h3, h4, h5, h6 {
   font-family: "Space Grotesk", sans-serif;
 }

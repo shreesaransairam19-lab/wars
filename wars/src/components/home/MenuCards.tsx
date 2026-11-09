@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { Star, BookOpen, MessageCircle, Clapperboard } from "lucide-react";
 
 const cards = [
@@ -12,6 +13,8 @@ const cards = [
     description:
       "Browse manga and light novels, then open a title to read its chapters.",
     href: "/manga",
+    backdrop: "manga",
+    backgroundGif: null as string | null,
   },
   {
     number: "02 / WATCH",
@@ -21,6 +24,8 @@ const cards = [
     description:
       "Explore anime series and movies, with their own ratings and reviews.",
     href: "/anime",
+    backdrop: "anime",
+    backgroundGif: null as string | null,
   },
   {
     number: "03 / DISCOVER",
@@ -30,6 +35,8 @@ const cards = [
     description:
       "Compare reader ratings and share reviews for titles in either library.",
     href: "/library",
+    backdrop: "reviews",
+    backgroundGif: null as string | null,
   },
   {
     number: "04 / CONNECT",
@@ -39,6 +46,8 @@ const cards = [
     description:
       "Join community rooms, share theories, and talk with other fans.",
     href: "/chat",
+    backdrop: "chat",
+    backgroundGif: null as string | null,
   },
 ];
 
@@ -67,7 +76,8 @@ export function MenuCards() {
           <Link
             key={card.title}
             href={card.href}
-            className="group relative flex min-h-[280px] flex-col rounded-[19px] border border-line bg-panel p-6 transition-all hover:-translate-y-1 hover:border-[#54545e] hover:bg-[#1e1e26] md:min-h-[302px]"
+            className={`home-menu-card home-menu-card--${card.backdrop} group relative flex min-h-[280px] flex-col rounded-[19px] border border-line p-6 transition-all hover:-translate-y-1 hover:border-[#54545e] md:min-h-[302px]`}
+            style={card.backgroundGif ? { "--menu-card-art": `url("${card.backgroundGif}")` } as CSSProperties : undefined}
           >
             <div className="flex items-center justify-between">
               <span className="font-heading text-xs font-medium text-[#777681]">
