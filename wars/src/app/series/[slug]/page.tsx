@@ -5,6 +5,7 @@ import { TopBar } from "@/components/layout/TopBar";
 import { ArrowLeft, Star, BookOpen } from "lucide-react";
 import { ReviewSection } from "@/components/series/ReviewSection";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { hasRole } from "@/lib/permissions/guards";
 import { createSignedStorageUrl } from "@/lib/storage/signed-url";
 
@@ -45,15 +46,17 @@ async function SeriesContent({ params }: { params: Promise<{ slug: string }> }) 
   let dbId: string | null = null;
 
   const supabase = await createClient();
-  const { data } = await supabase
+  const admin = createAdminClient();
+  const { data } = await admin
     .from("series")
-    .select("*")
+    .select("id, title, slug, description, content_type, cover_path")
     .eq("slug", slug)
+    .eq("status", "published")
     .maybeSingle();
 
   if (data) {
       dbId = data.id;
-      const { data: chapterRows } = await supabase
+      const { data: chapterRows } = await admin
         .from("chapters")
         .select("id, title, slug, chapter_number, status")
         .eq("series_id", data.id)
