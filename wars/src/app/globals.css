@@ -52,6 +52,32 @@ body {
   min-height: 100vh;
 }
 
+.home-page-background {
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 75% 15%, rgba(70, 92, 160, .18), transparent 52%),
+    linear-gradient(145deg, #171a28, #111116 70%);
+}
+
+.home-page-background__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: .4;
+}
+
+.home-page-background__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(12, 12, 18, .52) 0%, rgba(12, 12, 18, .65) 48%, rgba(12, 12, 18, .78) 100%);
+}
+
 @keyframes role-glitter-shift {
   from { background-position: 100% 50%; }
   to { background-position: -100% 50%; }
@@ -544,7 +570,8 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .home-menu-card__video,
-  .library-choice-card__video {
+  .library-choice-card__video,
+  .home-page-background__video {
     display: none;
   }
 }
