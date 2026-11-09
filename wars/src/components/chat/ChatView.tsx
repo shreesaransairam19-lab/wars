@@ -41,6 +41,7 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [error, setError] = useState(roomsError ?? "");
+  const [sendError, setSendError] = useState("");
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState("");
   const [communityName, setCommunityName] = useState("");
@@ -71,6 +72,8 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
     let loadingMessages = false;
     setMessages([]);
     setLoading(true);
+    setError("");
+    setSendError("");
 
     async function load() {
       if (cancelled || loadingMessages || document.visibilityState === "hidden") return;
@@ -124,6 +127,7 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
     if (!content || !activeRoom) return;
     setInput("");
     setError("");
+    setSendError("");
     const res = await fetch("/api/chat/messages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -131,7 +135,7 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
     });
     if (!res.ok) {
       const json = await res.json().catch(() => ({}));
-      setError(json.error ?? "Could not send");
+      setSendError(json.error ?? "Could not send");
       setInput(content);
     } else {
       const refresh = await fetch(`/api/chat/messages?room_id=${activeRoom}`);
@@ -415,7 +419,7 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
           </div>
         )}
         <form onSubmit={send} className="border-t border-line p-3">
-          {error && <p className="mb-1.5 text-[11px] text-pink">{error}</p>}
+          {(sendError || error) && <p className="mb-1.5 text-[11px] text-pink" role="alert">{sendError || error}</p>}
           <div className="flex items-center gap-2">
             <button
               type="button"
