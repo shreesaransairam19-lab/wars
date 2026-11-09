@@ -1,12 +1,38 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { hasAnyRole } from "@/lib/permissions/guards";
+import { getUserHighestRole, hasAnyRole } from "@/lib/permissions/guards";
 import { chatMessageSchema } from "@/lib/validation/chat";
 import { sanitizeChatMessage, containsHarmfulContent } from "@/lib/security/sanitize";
 import { containsProfanity } from "@/lib/security/profanity";
 import { checkRateLimit, getClientIp, RATE_LIMITS } from "@/lib/security/rate-limit";
 import { XP_REWARDS, XP_DAILY_CAPS } from "@/lib/xp/calculate";
+
+const GENERAL_CHAT_MESSAGE_LIMIT = 30;
+
+async function pruneGeneralChat(admin: ReturnType<typeof createAdminClient>, roomId: string) {
+  const { data: newest, error: readError } = await admin
+    .from("chat_messages")
+    .select("id")
+    .eq("room_id", roomId)
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(GENERAL_CHAT_MESSAGE_LIMIT);
+
+  if (readError || !newest?.length) {
+    if (readError) console.error("Could not read general chat retention window", readError);
+    return;
+  }
+
+  const keepIds = newest.map((message) => message.id);
+  const { error: deleteError } = await admin
+    .from("chat_messages")
+    .delete()
+    .eq("room_id", roomId)
+    .not("id", "in", `(${keepIds.join(",")})`);
+
+  if (deleteError) console.error("Could not prune old general chat messages", deleteError);
+}
 
 // GET /api/chat/messages?room_id=xxx&before=iso
 export async function GET(request: Request) {
@@ -40,8 +66,18 @@ export async function GET(request: Request) {
     if (!membership) return NextResponse.json({ error: "You are not a member of this conversation" }, { status: 403 });
   }
 
+  // Direct-message history lives in each participant's browser. Supabase is
+  // only the live Broadcast relay; never return persisted DM rows.
+  if (room.room_type === "dm") {
+    return NextResponse.json(
+      { messages: [], ephemeral: true },
+      { headers: { "Cache-Control": "private, no-store, max-age=0" } }
+    );
+  }
+
   // We have checked public visibility or private-room membership above, so use
   // the service client here to avoid chat reads failing on inconsistent RLS.
+  if (room.slug === "general-chat-general") await pruneGeneralChat(admin, roomId);
   let query = admin
     .from("chat_messages")
     .select(
@@ -51,7 +87,7 @@ export async function GET(request: Request) {
     )
     .eq("room_id", roomId)
     .order("created_at", { ascending: false })
-    .limit(room.slug === "general-chat-general" ? 30 : 50);
+    .limit(room.slug === "general-chat-general" ? GENERAL_CHAT_MESSAGE_LIMIT : 50);
 
   if (before) {
     query = query.lt("created_at", before);
@@ -182,6 +218,48 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "You are muted in this room" }, { status: 403 });
   }
 
+  if (targetRoom.room_type === "dm") {
+    const { data: participants, error: participantsError } = await admin
+      .from("chat_room_members")
+      .select("user_id")
+      .eq("room_id", targetRoom.id);
+    if (participantsError) return NextResponse.json({ error: "Could not verify private conversation participants" }, { status: 500 });
+    const peerId = participants?.find((participant) => participant.user_id !== user.id)?.user_id;
+    if (!peerId) return NextResponse.json({ error: "This private conversation has no recipient" }, { status: 400 });
+    const peerRoles = await admin.from("user_roles").select("roles(name)").eq("user_id", peerId);
+    if (peerRoles.error) return NextResponse.json({ error: "Could not verify the recipient's role" }, { status: 500 });
+    const assignedRoles = (peerRoles.data ?? []).flatMap((row) => {
+      const roles = row.roles;
+      return (Array.isArray(roles) ? roles : roles ? [roles] : []).map((role) => role.name);
+    });
+    if (assignedRoles.some((role) => ["owner", "admin", "editor"].includes(role))) {
+      return NextResponse.json({ error: "Please use Feedback to contact Owner, Admin, or Editor accounts" }, { status: 403 });
+    }
+
+    const [{ data: profile }, role] = await Promise.all([
+      admin.from("profiles").select("username,display_name").eq("id", user.id).maybeSingle(),
+      getUserHighestRole(user.id),
+    ]);
+    const createdAt = new Date().toISOString();
+    return NextResponse.json({
+      success: true,
+      ephemeral: true,
+      message: {
+        id: crypto.randomUUID(),
+        content,
+        message_type: parsed.data.message_type,
+        created_at: createdAt,
+        sender_id: user.id,
+        profiles: profile ? {
+          username: profile.username,
+          display_name: profile.display_name,
+          role: role ?? "reader",
+        } : null,
+        message_reactions: [],
+      },
+    }, { status: 201 });
+  }
+
   const { data: message, error } = await admin
     .from("chat_messages")
     .insert({
@@ -197,6 +275,10 @@ export async function POST(request: Request) {
   if (error || !message) {
     const isAdmin = await hasAnyRole(user.id, ["owner", "admin"]);
     return NextResponse.json({ error: isAdmin ? `Failed to send message (${error?.code ?? "database"}): ${error?.message ?? "No message returned"}` : "Failed to send message" }, { status: 500 });
+  }
+
+  if (targetRoom.slug === "general-chat-general") {
+    await pruneGeneralChat(admin, parsed.data.room_id);
   }
 
   // XP with daily cap (service-role write only)

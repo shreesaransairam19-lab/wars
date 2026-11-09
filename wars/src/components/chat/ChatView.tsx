@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import { RoleName } from "@/components/auth/RoleName";
 import { Send, ImagePlay } from "lucide-react";
 
@@ -11,6 +12,7 @@ export interface Room {
   slug: string;
   room_type: "server" | "channel" | "dm";
   parent_room_id: string | null;
+  peer_id?: string | null;
 }
 
 interface Message {
@@ -28,6 +30,33 @@ interface Gif {
   title: string;
   preview: string;
   url: string;
+}
+
+function dmStorageKey(userId: string, roomId: string) {
+  return `wars:private-messages:${userId}:${roomId}`;
+}
+
+function readLocalDmMessages(userId: string, roomId: string): Message[] {
+  try {
+    const stored = localStorage.getItem(dmStorageKey(userId, roomId));
+    const parsed: unknown = stored ? JSON.parse(stored) : [];
+    return Array.isArray(parsed) ? parsed as Message[] : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalDmMessages(userId: string, roomId: string, messages: Message[]) {
+  try {
+    localStorage.setItem(dmStorageKey(userId, roomId), JSON.stringify(messages));
+  } catch {
+    // Private history remains best-effort local data if browser storage is full.
+  }
+}
+
+function mergeDmMessage(messages: Message[], message: Message) {
+  return [...messages.filter((item) => item.id !== message.id), message]
+    .sort((a, b) => a.created_at.localeCompare(b.created_at));
 }
 
 export function ChatView({ rooms, roomsError, currentUserId, canManageCommunities }: { rooms: Room[]; roomsError?: string; currentUserId: string; canManageCommunities: boolean }) {
@@ -52,11 +81,13 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
   const [gifQuery, setGifQuery] = useState("");
   const [gifs, setGifs] = useState<Gif[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const dmChannelRef = useRef<RealtimeChannel | null>(null);
+  const [dmConnected, setDmConnected] = useState(false);
+  const [dmPeerOnline, setDmPeerOnline] = useState(false);
 
   const serverChannels = channels.filter((c) => c.parent_room_id === activeServer);
   const activeRoomData = roomList.find((c) => c.id === activeRoom) ?? dms.find((c) => c.id === activeRoom);
   const activeRoomName = activeRoomData?.name ?? "";
-
   useEffect(() => {
     void fetch("/api/chat/dms").then(async (res) => {
       if (res.ok) setDms((await res.json()).conversations ?? []);
@@ -75,6 +106,62 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
     setLoading(true);
     setError("");
     setSendError("");
+
+    if (activeRoomData?.room_type === "dm") {
+      setMessages(readLocalDmMessages(currentUserId, activeRoom));
+      setLoading(false);
+      setDmConnected(false);
+      setDmPeerOnline(false);
+
+      const supabase = isSupabaseConfigured() ? createClient() : null;
+      if (!supabase) {
+        setSendError("Live private messaging is unavailable right now.");
+        return () => { cancelled = true; };
+      }
+
+      const channel = supabase.channel(`dm:${activeRoom}`, { config: { private: true, broadcast: { self: false } } });
+      channel
+        .on("presence", { event: "sync" }, () => {
+          const online = Object.values(channel.presenceState()).flat().some(
+            (presence) => (presence as { user_id?: string }).user_id === activeRoomData.peer_id
+          );
+          setDmPeerOnline(Boolean(online));
+        })
+        .on("broadcast", { event: "message" }, ({ payload }) => {
+          const message = payload?.message as Message | undefined;
+          if (!message || typeof message.id !== "string" || typeof message.content !== "string" || message.sender_id === currentUserId) return;
+          setMessages((current) => {
+            const next = mergeDmMessage(current, message);
+            saveLocalDmMessages(currentUserId, activeRoom, next);
+            return next;
+          });
+        })
+        .subscribe((status) => {
+          if (cancelled) return;
+          setDmConnected(status === "SUBSCRIBED");
+          if (status === "SUBSCRIBED") {
+            void channel.track({ user_id: currentUserId });
+          } else {
+            setDmPeerOnline(false);
+          }
+          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+            setSendError("Could not connect to the private-message relay. Reopen the chat to retry.");
+          } else if (status === "SUBSCRIBED") {
+            setSendError("");
+          }
+        });
+      dmChannelRef.current = channel;
+
+      return () => {
+        cancelled = true;
+        setDmConnected(false);
+        setDmPeerOnline(false);
+        if (dmChannelRef.current === channel) dmChannelRef.current = null;
+        void supabase.removeChannel(channel);
+      };
+    }
+
+    setDmConnected(false);
 
     async function load() {
       if (cancelled || loadingMessages || document.visibilityState === "hidden") return;
@@ -116,7 +203,7 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
       document.removeEventListener("visibilitychange", refreshWhenVisible);
       if (supabase && channel) void supabase.removeChannel(channel);
     };
-  }, [activeRoom]);
+    }, [activeRoom, activeRoomData?.room_type, activeRoomData?.peer_id, currentUserId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -126,6 +213,15 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
     e.preventDefault();
     const content = input.trim();
     if (!content || !activeRoom) return;
+    const isDm = activeRoomData?.room_type === "dm";
+    if (isDm && (!dmConnected || !dmChannelRef.current)) {
+      setSendError("Connect to the live private-message relay before sending.");
+      return;
+    }
+    if (isDm && !dmPeerOnline) {
+      setSendError("The other reader is offline. Messages aren’t queued for later delivery.");
+      return;
+    }
     setInput("");
     setError("");
     setSendError("");
@@ -138,6 +234,25 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
       const json = await res.json().catch(() => ({}));
       setSendError(json.error ?? "Could not send");
       setInput(content);
+    } else if (isDm) {
+      const json = await res.json().catch(() => ({}));
+      const message = json.message as Message | undefined;
+      if (!message || !dmChannelRef.current) {
+        setSendError("Could not prepare the private message. Please retry.");
+        setInput(content);
+        return;
+      }
+      const sent = await dmChannelRef.current.send({ type: "broadcast", event: "message", payload: { message } });
+      if (sent !== "ok") {
+        setSendError("The other reader could not be reached. They must be online to receive a private message.");
+        setInput(content);
+        return;
+      }
+      setMessages((current) => {
+        const next = mergeDmMessage(current, message);
+        saveLocalDmMessages(currentUserId, activeRoom, next);
+        return next;
+      });
     } else {
       const refresh = await fetch(`/api/chat/messages?room_id=${activeRoom}`);
       if (refresh.ok) setMessages((await refresh.json()).messages ?? []);
@@ -209,6 +324,15 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
   async function sendGif(url: string) {
     if (!activeRoom) return;
     setGifOpen(false);
+    const isDm = activeRoomData?.room_type === "dm";
+    if (isDm && (!dmConnected || !dmChannelRef.current)) {
+      setSendError("Connect to the live private-message relay before sending.");
+      return;
+    }
+    if (isDm && !dmPeerOnline) {
+      setSendError("The other reader is offline. Messages aren’t queued for later delivery.");
+      return;
+    }
     const res = await fetch("/api/chat/messages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -217,6 +341,17 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
     if (!res.ok) {
       const json = await res.json().catch(() => ({}));
       setError(json.error ?? "Could not send GIF");
+    } else if (isDm) {
+      const json = await res.json().catch(() => ({}));
+      const message = json.message as Message | undefined;
+      if (!message || !dmChannelRef.current) { setSendError("Could not prepare the private message."); return; }
+      const sent = await dmChannelRef.current.send({ type: "broadcast", event: "message", payload: { message } });
+      if (sent !== "ok") { setSendError("The other reader must be online to receive this private message."); return; }
+      setMessages((current) => {
+        const next = mergeDmMessage(current, message);
+        saveLocalDmMessages(currentUserId, activeRoom, next);
+        return next;
+      });
     }
   }
 
@@ -323,7 +458,7 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
         <header className="border-b border-line px-4 py-2.5">
           <div className="flex items-center justify-between gap-2">
             <h1 className="font-heading text-sm font-semibold">{activeRoomData?.room_type === "dm" ? `@ ${activeRoomName}` : `# ${activeRoomName}`}</h1>
-            <span className="flex items-center gap-1.5 text-[10px] text-muted"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />Live updates</span>
+            <span className="flex items-center gap-1.5 text-[10px] text-muted"><span className={`h-1.5 w-1.5 rounded-full ${activeRoomData?.room_type === "dm" ? (dmConnected && dmPeerOnline ? "bg-emerald-400" : "bg-amber-400") : "bg-emerald-400"}`} />{activeRoomData?.room_type === "dm" ? (dmConnected ? (dmPeerOnline ? "Reader online" : "Waiting for reader") : "Connecting…") : "Live updates"}</span>
           </div>
         </header>
 
@@ -362,7 +497,7 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
                     {message.content}
                   </p>
                 )}
-                <div className="mt-1 flex items-center gap-1">
+                {activeRoomData?.room_type !== "dm" && <div className="mt-1 flex items-center gap-1">
                   {[...grouped.entries()].map(([reaction, n]) => (
                     <button
                       key={reaction}
@@ -381,7 +516,7 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
                   >
                     👍
                   </button>
-                </div>
+                </div>}
               </div>
             );
           })}
@@ -419,6 +554,11 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
             </div>
           </div>
         )}
+        {activeRoomData?.room_type === "dm" && (
+          <p className="border-t border-line px-3 pt-2 text-[10px] text-muted">
+            Private history is saved in this browser only. Both readers must be online for delivery.
+          </p>
+        )}
         <form onSubmit={send} className="border-t border-line p-3">
           {(sendError || error) && <p className="mb-1.5 text-[11px] text-pink" role="alert">{sendError || error}</p>}
           <div className="flex items-center gap-2">
@@ -438,14 +578,14 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
               value={input}
               onChange={(e) => setInput(e.target.value)}
               maxLength={4000}
-              placeholder={activeRoom ? `Message #${activeRoomName}` : "No chat room selected"}
+              placeholder={activeRoom ? `${activeRoomData?.room_type === "dm" ? "Message @" : "Message #"}${activeRoomName}` : "No chat room selected"}
               aria-label="Message"
-              disabled={!activeRoom}
+              disabled={!activeRoom || (activeRoomData?.room_type === "dm" && !dmConnected)}
               className="flex-1 rounded-lg border border-line bg-panel2 px-3 py-2 text-sm outline-none focus:border-accent"
             />
             <button
               type="submit"
-              disabled={!input.trim() || !activeRoom}
+              disabled={!input.trim() || !activeRoom || (activeRoomData?.room_type === "dm" && (!dmConnected || !dmPeerOnline))}
               className="grid h-9 w-9 place-items-center rounded-lg bg-accent text-[#171a11] disabled:opacity-50"
               aria-label="Send message"
             >

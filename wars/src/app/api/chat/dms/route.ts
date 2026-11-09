@@ -19,6 +19,15 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const admin = createAdminClient();
+  // Remove legacy PM bodies left by the previous database-backed chat. Going
+  // forward, /api/chat/messages only returns an ephemeral broadcast payload.
+  const { data: dmRooms, error: dmRoomsError } = await admin.from("chat_rooms").select("id").eq("room_type", "dm");
+  if (dmRoomsError) return NextResponse.json({ error: "Could not prepare private conversations" }, { status: 500 });
+  const allDmRoomIds = (dmRooms ?? []).map((room) => room.id);
+  if (allDmRoomIds.length) {
+    const { error: historyDeleteError } = await admin.from("chat_messages").delete().in("room_id", allDmRoomIds);
+    if (historyDeleteError) return NextResponse.json({ error: "Could not clear legacy private-message history" }, { status: 500 });
+  }
   const { data: memberships, error } = await admin.from("chat_room_members").select("room_id").eq("user_id", user.id);
   if (error) return NextResponse.json({ error: "Could not load conversations" }, { status: 500 });
   const ids = (memberships ?? []).map((membership) => membership.room_id);
