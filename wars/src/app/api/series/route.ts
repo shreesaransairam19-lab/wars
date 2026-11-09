@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { seriesSchema } from "@/lib/validation/series";
 import { hasRole } from "@/lib/permissions/guards";
 import { checkRateLimit, RATE_LIMITS, getClientIp } from "@/lib/security/rate-limit";
@@ -10,9 +11,21 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const all = url.searchParams.get("all") === "true";
 
-  let query = supabase
+  // Staff-only listings include draft/archived records. Verify the session
+  // and role first, then read with the server client so production RLS cannot
+  // silently hide existing series from the content manager.
+  const db = createAdminClient();
+  if (all) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!(await hasRole(user.id, "editor"))) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  }
+
+  let query = db
     .from("series")
-    .select("*")
+    .select(all ? "*" : "id, title, slug, description, content_type, cover_path, status, created_at")
     .order("created_at", { ascending: false });
 
   if (!all) {
