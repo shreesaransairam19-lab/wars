@@ -7,7 +7,7 @@ import Link from "next/link";
 import { TopBar } from "@/components/layout/TopBar";
 
 const UPI_ID = "fictrivosoftwarelimited@oksbi";
-const PAYEE_NAME = "FICTRIVO SOFTWARE LIMITED";
+const PAYEE_NAME = "Arun Ram R";
 
 export default function SupportPage() {
   const [amount, setAmount] = useState("100");
