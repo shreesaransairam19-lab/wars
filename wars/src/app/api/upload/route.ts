@@ -4,6 +4,7 @@ import { hasAnyRole } from "@/lib/permissions/guards";
 import {
   validateImageFile,
   validateDocumentFile,
+  getImageMimeType,
   generateStoragePath,
 } from "@/lib/security/file-validation";
 import { checkRateLimit, RATE_LIMITS, getClientIp } from "@/lib/security/rate-limit";
@@ -91,12 +92,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: validation.error }, { status: 400 });
   }
 
+  const mimeType = file.type || (assetType === "novel"
+    ? (file.name.toLowerCase().endsWith(".pdf") ? "application/pdf" : "application/epub+zip")
+    : getImageMimeType(fileMeta));
+
   // Upload to Supabase Storage
   const buffer = await file.arrayBuffer();
   const { error: uploadError } = await supabase.storage
     .from(bucket)
     .upload(storagePath, buffer, {
-      contentType: file.type || (file.name.toLowerCase().endsWith(".pdf") ? "application/pdf" : "application/epub+zip"),
+      contentType: mimeType,
       upsert: false,
     });
 
@@ -113,7 +118,7 @@ export async function POST(request: Request) {
       chapter_id: chapterId,
       asset_type: assetType === "novel" ? "file" : "page",
       storage_path: `${bucket}/${storagePath}`,
-      mime_type: file.type || (file.name.toLowerCase().endsWith(".pdf") ? "application/pdf" : "application/epub+zip"),
+      mime_type: mimeType,
       byte_size: file.size,
       page_number: pageNumber ? parseInt(pageNumber, 10) : null,
       order_index: orderIndex ? parseInt(orderIndex, 10) : 0,

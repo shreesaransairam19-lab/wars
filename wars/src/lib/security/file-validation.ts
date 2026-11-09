@@ -9,6 +9,13 @@ const ALLOWED_IMAGE_TYPES = [
 
 const ALLOWED_IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
 const ALLOWED_DOCUMENT_EXTENSIONS = [".epub", ".pdf"];
+const IMAGE_MIME_BY_EXTENSION: Record<string, string> = {
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".webp": "image/webp",
+  ".gif": "image/gif",
+};
 
 export const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB per image
 export const MAX_DOCUMENT_SIZE = 50 * 1024 * 1024; // 50MB per chapter document
@@ -31,7 +38,8 @@ export function validateImageFile(file: {
     return { valid: false, error: `Invalid file extension: ${ext}` };
   }
 
-  if (!ALLOWED_IMAGE_TYPES.includes(file.type as (typeof ALLOWED_IMAGE_TYPES)[number])) {
+  const expectedType = IMAGE_MIME_BY_EXTENSION[ext];
+  if (file.type && (!ALLOWED_IMAGE_TYPES.includes(file.type as (typeof ALLOWED_IMAGE_TYPES)[number]) || file.type !== expectedType)) {
     return { valid: false, error: `Invalid file type: ${file.type}` };
   }
 
@@ -43,6 +51,12 @@ export function validateImageFile(file: {
   }
 
   return { valid: true };
+}
+
+export function getImageMimeType(file: { name: string; type: string }): string {
+  if (file.type) return file.type;
+  const ext = file.name.toLowerCase().slice(file.name.lastIndexOf("."));
+  return IMAGE_MIME_BY_EXTENSION[ext] ?? "application/octet-stream";
 }
 
 export function validateDocumentFile(file: {

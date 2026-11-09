@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ImageUp, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { getImageMimeType } from "@/lib/security/file-validation";
 
 export function CoverUpload({
   seriesId,
@@ -20,7 +21,8 @@ export function CoverUpload({
     setUploading(true);
     setMessage("");
     try {
-      const meta = { series_id: seriesId, name: file.name, type: file.type, size: file.size };
+      const contentType = getImageMimeType({ name: file.name, type: file.type });
+      const meta = { series_id: seriesId, name: file.name, type: contentType, size: file.size };
       const signedResponse = await fetch("/api/upload/cover", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -32,7 +34,7 @@ export function CoverUpload({
       const { error: uploadError } = await createClient()
         .storage.from(signed.bucket)
         .uploadToSignedUrl(signed.path, signed.token, file, {
-          contentType: file.type,
+          contentType,
           upsert: false,
         });
       if (uploadError) throw new Error(uploadError.message);
