@@ -10,6 +10,7 @@ interface SeriesFormProps {
 export function SeriesForm({ onCreated }: SeriesFormProps) {
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
+  const [slugEdited, setSlugEdited] = useState(false);
   const [description, setDescription] = useState("");
   const [contentType, setContentType] = useState<"manga" | "light_novel">("manga");
   const [status, setStatus] = useState<"draft" | "published">("published");
@@ -55,6 +56,7 @@ export function SeriesForm({ onCreated }: SeriesFormProps) {
       setSuccess(true);
       setTitle("");
       setSlug("");
+      setSlugEdited(false);
       setDescription("");
       onCreated?.();
     } catch {
@@ -92,8 +94,9 @@ export function SeriesForm({ onCreated }: SeriesFormProps) {
             className="w-full rounded-lg border border-line bg-[#121217] px-2.5 py-2 text-xs text-foreground outline-none focus:border-accent"
             value={title}
             onChange={(e) => {
-              setTitle(e.target.value);
-              if (!slug) setSlug(autoSlug(e.target.value));
+              const value = e.target.value;
+              setTitle(value);
+              if (!slugEdited) setSlug(autoSlug(value));
             }}
             required
             maxLength={200}
@@ -108,7 +111,10 @@ export function SeriesForm({ onCreated }: SeriesFormProps) {
             id="series-slug"
             className="w-full rounded-lg border border-line bg-[#121217] px-2.5 py-2 text-xs text-foreground outline-none focus:border-accent"
             value={slug}
-            onChange={(e) => setSlug(e.target.value)}
+            onChange={(e) => {
+              setSlugEdited(true);
+              setSlug(e.target.value);
+            }}
             placeholder="auto-generated"
             maxLength={200}
           />

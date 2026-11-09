@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Rate limited" }, { status: 429 });
   }
 
-  const body = await request.json();
+  const body = await request.json().catch(() => null);
   const parsed = seriesSchema.safeParse(body);
 
   if (!parsed.success) {
@@ -60,7 +60,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const { data, error } = await supabase
+  // Role authorization above is the gate; use the server admin client for the
+  // insert so a stale/missing production RLS policy cannot reject staff work.
+  const admin = createAdminClient();
+  const { data, error } = await admin
     .from("series")
     .insert({
       ...parsed.data,
@@ -73,7 +76,8 @@ export async function POST(request: Request) {
     if (error.code === "23505") {
       return NextResponse.json({ error: "Slug already exists" }, { status: 409 });
     }
-    return NextResponse.json({ error: "Failed to create series" }, { status: 500 });
+    console.error("Series creation failed", { code: error.code, message: error.message, details: error.details });
+    return NextResponse.json({ error: `Failed to create series: ${error.message}` }, { status: 500 });
   }
 
   return NextResponse.json({ series: data }, { status: 201 });
