@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { hasAnyRole } from "@/lib/permissions/guards";
 import { chatMessageSchema } from "@/lib/validation/chat";
 import { sanitizeChatMessage, containsHarmfulContent } from "@/lib/security/sanitize";
 import { checkRateLimit, getClientIp, RATE_LIMITS } from "@/lib/security/rate-limit";
@@ -27,14 +28,20 @@ export async function GET(request: Request) {
 
   // Private conversations must never rely on a client supplied room id alone.
   const admin = createAdminClient();
-  const { data: room } = await admin.from("chat_rooms").select("id,room_type,visibility").eq("id", roomId).maybeSingle();
+  const { data: room, error: roomError } = await admin.from("chat_rooms").select("id,room_type,visibility").eq("id", roomId).maybeSingle();
+  if (roomError) {
+    const isAdmin = await hasAnyRole(user.id, ["owner", "admin"]);
+    return NextResponse.json({ error: isAdmin ? `Chat room lookup failed (${roomError.code ?? "database"}): ${roomError.message}` : "Could not load this chat room" }, { status: 500 });
+  }
   if (!room) return NextResponse.json({ error: "Chat room not found" }, { status: 404 });
-  if (room.room_type === "dm") {
+  if (room.visibility === "private") {
     const { data: membership } = await admin.from("chat_room_members").select("room_id").eq("room_id", roomId).eq("user_id", user.id).maybeSingle();
     if (!membership) return NextResponse.json({ error: "You are not a member of this conversation" }, { status: 403 });
   }
 
-  let query = supabase
+  // We have checked public visibility or private-room membership above, so use
+  // the service client here to avoid chat reads failing on inconsistent RLS.
+  let query = admin
     .from("chat_messages")
     .select(
       `id, content, message_type, created_at, is_deleted, sender_id,
@@ -49,9 +56,18 @@ export async function GET(request: Request) {
     query = query.lt("created_at", before);
   }
 
-  const { data, error } = await query;
+  let result: Awaited<typeof query>;
+  try {
+    result = await query;
+  } catch (cause) {
+    const isAdmin = await hasAnyRole(user.id, ["owner", "admin"]);
+    const detail = cause instanceof Error ? cause.message : String(cause);
+    return NextResponse.json({ error: isAdmin ? `Chat request failed: ${detail}` : "Chat messages are temporarily unavailable" }, { status: 503 });
+  }
+  const { data, error } = result;
   if (error) {
-    return NextResponse.json({ error: "Failed to fetch messages" }, { status: 500 });
+    const isAdmin = await hasAnyRole(user.id, ["owner", "admin"]);
+    return NextResponse.json({ error: isAdmin ? `Failed to fetch messages (${error.code ?? "database"}): ${error.message}` : "Failed to fetch messages" }, { status: 500 });
   }
 
   const messages = (data ?? []).reverse().map((message) => ({
