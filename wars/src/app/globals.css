@@ -436,7 +436,42 @@ body {
   transition: background-color .2s ease, box-shadow .2s ease;
 }
 
+.library-choice-card {
+  isolation: isolate;
+  overflow: hidden;
+  background-color: #19191f;
+  background-image: var(--library-choice-fallback);
+  background-position: center;
+  background-size: cover;
+  transition: box-shadow .2s ease;
+}
+
+.library-choice-card--manga {
+  --library-choice-fallback:
+    radial-gradient(ellipse at 82% 19%, rgba(190, 88, 235, .3), transparent 48%),
+    radial-gradient(ellipse at 15% 76%, rgba(112, 66, 191, .2), transparent 46%),
+    linear-gradient(140deg, #302440, #1b1924 65%, #292136);
+}
+
+.library-choice-card--anime {
+  --library-choice-fallback:
+    radial-gradient(ellipse at 76% 16%, rgba(70, 146, 255, .34), transparent 48%),
+    radial-gradient(ellipse at 20% 78%, rgba(55, 224, 204, .16), transparent 42%),
+    linear-gradient(140deg, #1d3150, #191b29 63%, #182e3a);
+}
+
 .home-menu-card__video {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: .58;
+  transition: opacity .3s ease;
+}
+
+.library-choice-card__video {
   position: absolute;
   z-index: 0;
   inset: 0;
@@ -455,11 +490,27 @@ body {
   background: linear-gradient(180deg, rgba(13, 13, 20, .28) 0%, rgba(13, 13, 20, .62) 46%, rgba(18, 18, 25, .96) 100%);
 }
 
+.library-choice-card__scrim {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(13, 13, 20, .2) 0%, rgba(13, 13, 20, .5) 40%, rgba(18, 18, 25, .96) 100%);
+}
+
 .home-menu-card:hover {
   box-shadow: 0 16px 36px rgba(0, 0, 0, .26);
 }
 
+.library-choice-card:hover {
+  box-shadow: 0 16px 36px rgba(0, 0, 0, .26);
+}
+
 .home-menu-card:hover .home-menu-card__video {
+  opacity: .7;
+}
+
+.library-choice-card:hover .library-choice-card__video {
   opacity: .7;
 }
 
@@ -492,7 +543,8 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .home-menu-card__video {
+  .home-menu-card__video,
+  .library-choice-card__video {
     display: none;
   }
 }
