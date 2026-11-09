@@ -29,7 +29,7 @@ interface Gif {
   url: string;
 }
 
-export function ChatView({ rooms, currentUserId, canManageCommunities }: { rooms: Room[]; currentUserId: string; canManageCommunities: boolean }) {
+export function ChatView({ rooms, roomsError, currentUserId, canManageCommunities }: { rooms: Room[]; roomsError?: string; currentUserId: string; canManageCommunities: boolean }) {
   const [roomList, setRoomList] = useState(rooms);
   const channels = roomList.filter((r) => r.room_type === "channel");
   const servers = roomList.filter((r) => r.room_type === "server");
@@ -40,7 +40,7 @@ export function ChatView({ rooms, currentUserId, canManageCommunities }: { rooms
   );
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState(roomsError ?? "");
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState("");
   const [communityName, setCommunityName] = useState("");
@@ -62,7 +62,11 @@ export function ChatView({ rooms, currentUserId, canManageCommunities }: { rooms
   }, []);
 
   useEffect(() => {
-    if (!activeRoom) return;
+    if (!activeRoom) {
+      setMessages([]);
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     let loadingMessages = false;
     setMessages([]);
@@ -319,8 +323,9 @@ export function ChatView({ rooms, currentUserId, canManageCommunities }: { rooms
         </header>
 
         <div className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
-          {loading && messages.length === 0 && <p className="text-sm text-muted">Loading messages…</p>}
-          {!loading && messages.length === 0 && !error && <p className="text-sm text-muted">No messages yet. Start the conversation.</p>}
+          {activeRoom && loading && messages.length === 0 && <p className="text-sm text-muted">Loading messages…</p>}
+          {!activeRoom && !loading && <p className={`text-sm ${roomsError ? "text-pink" : "text-muted"}`} role={roomsError ? "alert" : undefined}>{roomsError ?? "No chat rooms are available yet. Try refreshing the page."}</p>}
+          {activeRoom && !loading && messages.length === 0 && !error && <p className="text-sm text-muted">No messages yet. Start the conversation.</p>}
           {messages.map((message) => {
             const grouped = new Map<string, number>();
             (message.message_reactions ?? []).forEach((r) =>
@@ -428,13 +433,14 @@ export function ChatView({ rooms, currentUserId, canManageCommunities }: { rooms
               value={input}
               onChange={(e) => setInput(e.target.value)}
               maxLength={4000}
-              placeholder={`Message #${activeRoomName}`}
+              placeholder={activeRoom ? `Message #${activeRoomName}` : "No chat room selected"}
               aria-label="Message"
+              disabled={!activeRoom}
               className="flex-1 rounded-lg border border-line bg-panel2 px-3 py-2 text-sm outline-none focus:border-accent"
             />
             <button
               type="submit"
-              disabled={!input.trim()}
+              disabled={!input.trim() || !activeRoom}
               className="grid h-9 w-9 place-items-center rounded-lg bg-accent text-[#171a11] disabled:opacity-50"
               aria-label="Send message"
             >

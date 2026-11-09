@@ -82,16 +82,23 @@ async function ChatContent() {
     }
   }
 
-  const { data: rooms } = await supabase
+  const { data: rooms, error: roomsError } = await admin
     .from("chat_rooms")
     .select("*")
+    .eq("visibility", "public")
     .order("room_type", { ascending: true })
     .order("name", { ascending: true });
+
+  const roomLoadError = roomsError
+    ? canManageCommunities
+      ? `Could not load chat rooms: ${roomsError.message}`
+      : "Chat rooms are temporarily unavailable. Please refresh."
+    : undefined;
 
   return (
     <>
       <TopBar />
-      <ChatView rooms={(rooms ?? []) as Room[]} currentUserId={user.id} canManageCommunities={canManageCommunities} />
+      <ChatView rooms={(rooms ?? []) as Room[]} roomsError={roomLoadError} currentUserId={user.id} canManageCommunities={canManageCommunities} />
     </>
   );
 }
