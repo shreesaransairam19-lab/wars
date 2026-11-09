@@ -44,10 +44,14 @@ export async function GET(request: Request) {
 
   const series = data ?? [];
   const chapterCounts = new Map<string, number>();
+  const ratingsBySeries = new Map<string, { rating: number }[]>();
   if (series.length > 0) {
     let chapterQuery = db.from("chapters").select("series_id").in("series_id", series.map((item) => item.id));
     if (!all) chapterQuery = chapterQuery.eq("status", "published");
-    const { data: chapterRows, error: chaptersError } = await chapterQuery;
+    const [{ data: chapterRows, error: chaptersError }, ratingsResult] = await Promise.all([
+      chapterQuery,
+      db.from("ratings").select("series_id, rating").in("series_id", series.map((item) => item.id)),
+    ]);
     if (chaptersError) {
       console.error("Series chapter counts query failed", { code: chaptersError.code, message: chaptersError.message });
       return NextResponse.json(
@@ -58,12 +62,22 @@ export async function GET(request: Request) {
     for (const chapter of chapterRows ?? []) {
       chapterCounts.set(chapter.series_id, (chapterCounts.get(chapter.series_id) ?? 0) + 1);
     }
+    if (ratingsResult.error) {
+      console.error("Series ratings query failed", { code: ratingsResult.error.code, message: ratingsResult.error.message });
+      return NextResponse.json({ error: "Failed to fetch series ratings" }, { status: 500 });
+    }
+    for (const rating of ratingsResult.data ?? []) {
+      const current = ratingsBySeries.get(rating.series_id) ?? [];
+      current.push({ rating: rating.rating });
+      ratingsBySeries.set(rating.series_id, current);
+    }
   }
 
   return NextResponse.json({
     series: series.map((item) => ({
       ...item,
       chapters: [{ count: chapterCounts.get(item.id) ?? 0 }],
+      ratings: ratingsBySeries.get(item.id) ?? [],
     })),
   });
 }

@@ -32,25 +32,33 @@ async function loadSeries(): Promise<LibrarySeries[]> {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("series")
-    .select("id, title, slug, description, content_type, cover_path, ratings(rating)")
+    .select("id, title, slug, description, content_type, cover_path")
     .eq("status", "published")
     .order("created_at", { ascending: false });
   if (error || !data) return [];
   const chapterCounts = new Map<string, number>();
+  const ratingRows: { series_id: string; rating: number }[] = [];
   if (data.length > 0) {
-    const { data: chapterRows } = await supabase
+    const [{ data: chapterRows }, { data: ratings }] = await Promise.all([
+      supabase
       .from("chapters")
       .select("series_id")
       .in("series_id", data.map((series) => series.id))
-      .eq("status", "published");
+      .eq("status", "published"),
+      supabase
+        .from("ratings")
+        .select("series_id, rating")
+        .in("series_id", data.map((series) => series.id)),
+    ]);
     for (const chapter of chapterRows ?? []) {
       chapterCounts.set(chapter.series_id, (chapterCounts.get(chapter.series_id) ?? 0) + 1);
     }
+    ratingRows.push(...(ratings ?? []));
   }
   return Promise.all(data.map(async (s) => {
-    const ratings = (s.ratings ?? []) as { rating: number }[];
+    const ratings = ratingRows.filter((rating) => rating.series_id === s.id);
     const avg = ratings.length
-      ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length
+      ? ratings.reduce((sum, rating) => sum + rating.rating, 0) / ratings.length
       : 0;
     return {
       id: s.id,
