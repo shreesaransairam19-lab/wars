@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { hasAnyRole } from "@/lib/permissions/guards";
 import { chatMessageSchema } from "@/lib/validation/chat";
 import { sanitizeChatMessage, containsHarmfulContent } from "@/lib/security/sanitize";
+import { containsProfanity } from "@/lib/security/profanity";
 import { checkRateLimit, getClientIp, RATE_LIMITS } from "@/lib/security/rate-limit";
 import { XP_REWARDS, XP_DAILY_CAPS } from "@/lib/xp/calculate";
 
@@ -144,6 +145,13 @@ export async function POST(request: Request) {
   const content = sanitizeChatMessage(parsed.data.content);
   if (!content || containsHarmfulContent(content)) {
     return NextResponse.json({ error: "Message rejected" }, { status: 400 });
+  }
+
+  if (parsed.data.message_type === "text" && containsProfanity(content)) {
+    return NextResponse.json(
+      { error: "That message contains language blocked by the chat filter. Please rephrase it." },
+      { status: 400 }
+    );
   }
 
   if (parsed.data.message_type === "image" && !/^https:\/\//.test(content)) {
