@@ -45,6 +45,7 @@ export function ChatView({ rooms, currentUserId, canManageCommunities }: { rooms
   const [username, setUsername] = useState("");
   const [communityName, setCommunityName] = useState("");
   const [roomName, setRoomName] = useState("");
+  const [updatingRooms, setUpdatingRooms] = useState(false);
   const [gifOpen, setGifOpen] = useState(false);
   const [gifQuery, setGifQuery] = useState("");
   const [gifs, setGifs] = useState<Gif[]>([]);
@@ -148,38 +149,45 @@ export function ChatView({ rooms, currentUserId, canManageCommunities }: { rooms
 
   async function changeCommunity(action: "create-community" | "create-room" | "remove", room?: Room) {
     if (action === "remove" && room && !window.confirm(`Remove ${room.name}? ${room.room_type === "server" ? "This also removes all rooms and message history inside it." : "This also removes its message history."}`)) return;
-    const response = action === "remove" && room
-      ? await fetch("/api/chat/communities", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: room.id, room_type: room.room_type }) })
-      : await fetch("/api/chat/communities", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(action === "create-community" ? { name: communityName } : { name: roomName, community_id: activeServer }) });
-    const json = await response.json().catch(() => ({}));
-    if (!response.ok) { setError(json.error ?? "Could not update chat rooms"); return; }
-
-    if (action === "create-community") {
-      const community = json.community as Room;
-      const defaultRoom = json.defaultRoom as Room;
-      if (!community?.id || !defaultRoom?.id) { setError("Community was created, but its rooms could not be loaded. Refresh the page."); return; }
-      setRoomList((current) => [...current, community, defaultRoom]);
-      setActiveServer(community.id);
-      setActiveRoom(defaultRoom.id);
-      setCommunityName("");
-    } else if (action === "create-room") {
-      const createdRoom = json.room as Room;
-      if (!createdRoom?.id) { setError("Room was created, but could not be loaded. Refresh the page."); return; }
-      setRoomList((current) => [...current, createdRoom]);
-      setActiveRoom(createdRoom.id);
-      setRoomName("");
-    } else if (room) {
-      const remaining = roomList.filter((item) => item.id !== room.id && !(room.room_type === "server" && item.parent_room_id === room.id));
-      setRoomList(remaining);
-      const nextServer = room.room_type === "server" && activeServer === room.id
-        ? remaining.find((item) => item.room_type === "server")?.id ?? ""
-        : activeServer;
-      setActiveServer(nextServer);
-      if (room.id === activeRoom || (room.room_type === "server" && activeServer === room.id)) {
-        setActiveRoom(remaining.find((item) => item.room_type === "channel" && item.parent_room_id === nextServer)?.id ?? "");
-      }
-    }
+    setUpdatingRooms(true);
     setError("");
+    try {
+      const response = action === "remove" && room
+        ? await fetch("/api/chat/communities", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: room.id, room_type: room.room_type }) })
+        : await fetch("/api/chat/communities", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(action === "create-community" ? { name: communityName } : { name: roomName, community_id: activeServer }) });
+      const json = await response.json().catch(() => ({}));
+      if (!response.ok) { setError(json.error ?? `Request failed (${response.status})`); return; }
+
+      if (action === "create-community") {
+        const community = json.community as Room;
+        const defaultRoom = json.defaultRoom as Room;
+        if (!community?.id || !defaultRoom?.id) { setError("Community was created, but its rooms could not be loaded. Refresh the page."); return; }
+        setRoomList((current) => [...current, community, defaultRoom]);
+        setActiveServer(community.id);
+        setActiveRoom(defaultRoom.id);
+        setCommunityName("");
+      } else if (action === "create-room") {
+        const createdRoom = json.room as Room;
+        if (!createdRoom?.id) { setError("Room was created, but could not be loaded. Refresh the page."); return; }
+        setRoomList((current) => [...current, createdRoom]);
+        setActiveRoom(createdRoom.id);
+        setRoomName("");
+      } else if (room) {
+        const remaining = roomList.filter((item) => item.id !== room.id && !(room.room_type === "server" && item.parent_room_id === room.id));
+        setRoomList(remaining);
+        const nextServer = room.room_type === "server" && activeServer === room.id
+          ? remaining.find((item) => item.room_type === "server")?.id ?? ""
+          : activeServer;
+        setActiveServer(nextServer);
+        if (room.id === activeRoom || (room.room_type === "server" && activeServer === room.id)) {
+          setActiveRoom(remaining.find((item) => item.room_type === "channel" && item.parent_room_id === nextServer)?.id ?? "");
+        }
+      }
+    } catch {
+      setError("The request could not reach WARS. Check your connection and retry.");
+    } finally {
+      setUpdatingRooms(false);
+    }
   }
 
   async function searchGifs(query: string) {
@@ -293,8 +301,8 @@ export function ChatView({ rooms, currentUserId, canManageCommunities }: { rooms
         </div>
         {canManageCommunities && <div className="mt-4 border-t border-line pt-3">
           <h2 className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted">Communities (Owner/Admin)</h2>
-          <form className="space-y-1 p-1" onSubmit={(e) => { e.preventDefault(); void changeCommunity("create-community"); }}><input className="w-full rounded border border-line bg-panel2 px-2 py-1 text-xs" value={communityName} onChange={(e) => setCommunityName(e.target.value)} placeholder="New community" /><button className="w-full rounded bg-panel2 py-1 text-xs" type="submit">Create community</button></form>
-          {activeServer && <form className="space-y-1 p-1" onSubmit={(e) => { e.preventDefault(); void changeCommunity("create-room"); }}><input className="w-full rounded border border-line bg-panel2 px-2 py-1 text-xs" value={roomName} onChange={(e) => setRoomName(e.target.value)} placeholder="Room in selected community" /><button className="w-full rounded bg-panel2 py-1 text-xs" type="submit">Create room</button></form>}
+          <form className="space-y-1 p-1" onSubmit={(e) => { e.preventDefault(); void changeCommunity("create-community"); }}><input className="w-full rounded border border-line bg-panel2 px-2 py-1 text-xs" value={communityName} onChange={(e) => setCommunityName(e.target.value)} placeholder="New community" disabled={updatingRooms} /><button className="w-full rounded bg-panel2 py-1 text-xs disabled:opacity-50" type="submit" disabled={updatingRooms}>{updatingRooms ? "Saving…" : "Create community"}</button></form>
+          {activeServer && <form className="space-y-1 p-1" onSubmit={(e) => { e.preventDefault(); void changeCommunity("create-room"); }}><input className="w-full rounded border border-line bg-panel2 px-2 py-1 text-xs" value={roomName} onChange={(e) => setRoomName(e.target.value)} placeholder="Room in selected community" disabled={updatingRooms} /><button className="w-full rounded bg-panel2 py-1 text-xs disabled:opacity-50" type="submit" disabled={updatingRooms}>{updatingRooms ? "Saving…" : "Create room"}</button></form>}
           {error && <p className="px-2 py-1 text-xs text-pink" role="alert">{error}</p>}
           {servers.map((server) => <button key={server.id} className="block px-2 py-1 text-left text-[10px] text-pink" onClick={() => void changeCommunity("remove", server)} type="button">Remove {server.name}</button>)}
           {serverChannels.map((channel) => <button key={channel.id} className="block px-2 py-1 text-left text-[10px] text-pink" onClick={() => void changeCommunity("remove", channel)} type="button">Remove #{channel.name}</button>)}

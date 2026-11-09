@@ -27,17 +27,17 @@ export async function POST(request: Request) {
     if (!parent) return NextResponse.json({ error: "Community not found" }, { status: 404 });
     const name = roomParsed.data.name;
     const { data, error } = await admin.from("chat_rooms").insert({ name, slug: `${parent.slug}-${slugify(name)}-${crypto.randomUUID().slice(0, 6)}`, room_type: "channel", visibility: "public", parent_room_id: parent.id, created_by: user.id }).select("*").single();
-    if (error) return NextResponse.json({ error: "Could not create room" }, { status: 500 });
+    if (error) return NextResponse.json({ error: `Could not create room: ${error.message}` }, { status: 500 });
     return NextResponse.json({ room: data }, { status: 201 });
   }
   if (!communityParsed.success) return NextResponse.json({ error: "Enter a community or room name" }, { status: 400 });
   const name = communityParsed.data.name;
   const { data, error } = await admin.from("chat_rooms").insert({ name, slug: `${slugify(name)}-${crypto.randomUUID().slice(0, 6)}`, room_type: "server", visibility: "public", created_by: user.id }).select("*").single();
-  if (error) return NextResponse.json({ error: "Could not create community" }, { status: 500 });
+  if (error) return NextResponse.json({ error: `Could not create community: ${error.message}` }, { status: 500 });
   const { data: defaultRoom, error: defaultRoomError } = await admin.from("chat_rooms").insert({ name: "general", slug: `${data.slug}-general`, room_type: "channel", visibility: "public", parent_room_id: data.id, created_by: user.id }).select("*").single();
   if (defaultRoomError) {
     await admin.from("chat_rooms").delete().eq("id", data.id);
-    return NextResponse.json({ error: "Could not create the community's general room" }, { status: 500 });
+    return NextResponse.json({ error: `Could not create the community's general room: ${defaultRoomError.message}` }, { status: 500 });
   }
   return NextResponse.json({ community: data, defaultRoom }, { status: 201 });
 }
