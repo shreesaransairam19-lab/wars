@@ -10,8 +10,7 @@ import { ThemeToggle } from "@/components/layout/ThemeToggle";
 
 const navLinks = [
   { href: "/", label: "Home" },
-  { href: "/manga", label: "Manga Library" },
-  { href: "/anime", label: "Anime Library" },
+  { href: "/library", label: "Library" },
   { href: "/chat", label: "Chat" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/support", label: "Payment" },
