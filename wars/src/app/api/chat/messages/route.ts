@@ -29,7 +29,7 @@ export async function GET(request: Request) {
 
   // Private conversations must never rely on a client supplied room id alone.
   const admin = createAdminClient();
-  const { data: room, error: roomError } = await admin.from("chat_rooms").select("id,room_type,visibility").eq("id", roomId).maybeSingle();
+  const { data: room, error: roomError } = await admin.from("chat_rooms").select("id,slug,room_type,visibility").eq("id", roomId).maybeSingle();
   if (roomError) {
     const isAdmin = await hasAnyRole(user.id, ["owner", "admin"]);
     return NextResponse.json({ error: isAdmin ? `Chat room lookup failed (${roomError.code ?? "database"}): ${roomError.message}` : "Could not load this chat room" }, { status: 500 });
@@ -51,7 +51,7 @@ export async function GET(request: Request) {
     )
     .eq("room_id", roomId)
     .order("created_at", { ascending: false })
-    .limit(50);
+    .limit(room.slug === "general-chat-general" ? 30 : 50);
 
   if (before) {
     query = query.lt("created_at", before);
@@ -159,7 +159,7 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient();
-  const { data: targetRoom, error: roomError } = await admin.from("chat_rooms").select("id,room_type,visibility").eq("id", parsed.data.room_id).maybeSingle();
+  const { data: targetRoom, error: roomError } = await admin.from("chat_rooms").select("id,slug,room_type,visibility").eq("id", parsed.data.room_id).maybeSingle();
   if (roomError) {
     const isAdmin = await hasAnyRole(user.id, ["owner", "admin"]);
     return NextResponse.json({ error: isAdmin ? `Could not verify chat room (${roomError.code ?? "database"}): ${roomError.message}` : "Could not verify this chat room" }, { status: 500 });
