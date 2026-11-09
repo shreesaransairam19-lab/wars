@@ -1,9 +1,28 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { CatalogGrid } from "@/components/library/CatalogGrid";
 import { TopBar } from "@/components/layout/TopBar";
 import { loadCatalog } from "@/lib/library/catalog";
 
-export async function CatalogPage({ kind }: { kind: "manga" | "anime" }) {
+export function CatalogPage({ kind }: { kind: "manga" | "anime" }) {
+  return (
+    <Suspense
+      fallback={
+        <>
+          <TopBar />
+          <main className="mx-auto w-full max-w-7xl px-4 py-8 md:px-6 lg:px-10">
+            <div className="h-36 animate-pulse rounded-2xl border border-line bg-panel" />
+            <div className="mt-6 h-72 animate-pulse rounded-2xl border border-line bg-panel" />
+          </main>
+        </>
+      }
+    >
+      <CatalogContent kind={kind} />
+    </Suspense>
+  );
+}
+
+async function CatalogContent({ kind }: { kind: "manga" | "anime" }) {
   const isAnime = kind === "anime";
   const series = await loadCatalog(isAnime ? ["anime", "anime_movie"] : ["manga", "light_novel"]);
 

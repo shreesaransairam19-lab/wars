@@ -1,10 +1,28 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { TopBar } from "@/components/layout/TopBar";
 import { BanAppealForm } from "@/components/chat/BanAppealForm";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveChatBan } from "@/lib/moderation/chat-ban";
 
-export default async function BannedPage() {
+export default function BannedPage() {
+  return (
+    <Suspense
+      fallback={
+        <>
+          <TopBar />
+          <div className="grid min-h-[calc(100vh-64px)] place-items-center text-sm text-muted">
+            Loading account status...
+          </div>
+        </>
+      }
+    >
+      <BannedContent />
+    </Suspense>
+  );
+}
+
+async function BannedContent() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
