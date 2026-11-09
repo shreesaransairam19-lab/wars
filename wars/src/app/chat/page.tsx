@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { TopBar } from "@/components/layout/TopBar";
 import { ChatView, type Room } from "@/components/chat/ChatView";
+import { hasAnyRole } from "@/lib/permissions/guards";
 
 export default function ChatPage() {
   return (
@@ -28,6 +29,7 @@ async function ChatContent() {
   } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
+  const canManageCommunities = await hasAnyRole(user.id, ["owner", "admin"]);
 
   const { data: rooms } = await supabase
     .from("chat_rooms")
@@ -38,7 +40,7 @@ async function ChatContent() {
   return (
     <>
       <TopBar />
-      <ChatView rooms={(rooms ?? []) as Room[]} currentUserId={user.id} />
+      <ChatView rooms={(rooms ?? []) as Room[]} currentUserId={user.id} canManageCommunities={canManageCommunities} />
     </>
   );
 }

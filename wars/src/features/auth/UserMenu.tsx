@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { User, LogOut, Shield } from "lucide-react";
 import { useAuth } from "@/features/auth/useAuth";
+import { RoleBadge } from "@/components/auth/RoleBadge";
 
 export function UserMenu() {
   const { user, profile, roles, loading, signOut } = useAuth();
@@ -72,12 +73,7 @@ export function UserMenu() {
             {roles.length > 0 && (
               <div className="mt-1.5 flex flex-wrap gap-1">
                 {roles.map((role) => (
-                  <span
-                    key={role}
-                    className="rounded-full border border-[#514f5b] bg-[#302f38] px-2 py-0.5 text-[9px] font-bold text-[#d1ced8]"
-                  >
-                    {role}
-                  </span>
+                  <RoleBadge key={role} role={role} />
                 ))}
               </div>
             )}

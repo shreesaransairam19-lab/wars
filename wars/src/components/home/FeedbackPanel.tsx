@@ -14,13 +14,19 @@ export function FeedbackPanel() {
     if (!message.trim()) return;
 
     setStatus("sending");
-    // TODO: Wire to /api/feedback in Phase 7
-    // For now, simulate success
-    setTimeout(() => {
+    try {
+      const response = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, content: message }),
+      });
+      if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error ?? "Could not send feedback");
       setStatus("sent");
       setMessage("");
       setName("");
-    }, 800);
+    } catch {
+      setStatus("error");
+    }
   }
 
   return (
@@ -48,6 +54,7 @@ export function FeedbackPanel() {
           onSubmit={handleSubmit}
           className="mt-5 grid gap-3 md:grid-cols-[minmax(170px,0.35fr)_minmax(0,1fr)_auto] md:items-end"
         >
+          {status === "error" && <p className="text-xs text-pink md:col-span-full">Could not send feedback. Please try again.</p>}
           <div>
             <label
               htmlFor="feedback-name"

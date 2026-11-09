@@ -25,11 +25,20 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "room_id required" }, { status: 400 });
   }
 
+  // Private conversations must never rely on a client supplied room id alone.
+  const admin = createAdminClient();
+  const { data: room } = await admin.from("chat_rooms").select("id,room_type,visibility").eq("id", roomId).maybeSingle();
+  if (!room) return NextResponse.json({ error: "Chat room not found" }, { status: 404 });
+  if (room.room_type === "dm") {
+    const { data: membership } = await admin.from("chat_room_members").select("room_id").eq("room_id", roomId).eq("user_id", user.id).maybeSingle();
+    if (!membership) return NextResponse.json({ error: "You are not a member of this conversation" }, { status: 403 });
+  }
+
   let query = supabase
     .from("chat_messages")
     .select(
       `id, content, message_type, created_at, is_deleted, sender_id,
-       profiles:sender_id (username, avatar_path),
+       profiles:sender_id (username, display_name, avatar_path),
        message_reactions (reaction, user_id)`
     )
     .eq("room_id", roomId)
@@ -45,7 +54,12 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Failed to fetch messages" }, { status: 500 });
   }
 
-  return NextResponse.json({ messages: (data ?? []).reverse() });
+  const messages = (data ?? []).reverse().map((message) => ({
+    ...message,
+    profiles: Array.isArray(message.profiles) ? message.profiles[0] ?? null : message.profiles,
+    content: message.is_deleted ? "This message was removed." : message.content,
+  }));
+  return NextResponse.json({ messages });
 }
 
 // POST /api/chat/messages
@@ -83,6 +97,13 @@ export async function POST(request: Request) {
 
   if (parsed.data.message_type === "image" && !/^https:\/\//.test(content)) {
     return NextResponse.json({ error: "Invalid image URL" }, { status: 400 });
+  }
+
+  const { data: targetRoom } = await createAdminClient().from("chat_rooms").select("id,room_type").eq("id", parsed.data.room_id).maybeSingle();
+  if (!targetRoom) return NextResponse.json({ error: "Chat room not found" }, { status: 404 });
+  if (targetRoom.room_type === "dm") {
+    const { data: membership } = await createAdminClient().from("chat_room_members").select("room_id").eq("room_id", targetRoom.id).eq("user_id", user.id).maybeSingle();
+    if (!membership) return NextResponse.json({ error: "You are not a member of this conversation" }, { status: 403 });
   }
 
   const { data: message, error } = await supabase

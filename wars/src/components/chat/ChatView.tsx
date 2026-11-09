@@ -18,7 +18,7 @@ interface Message {
   message_type: string;
   created_at: string;
   sender_id: string;
-  profiles: { username: string } | null;
+  profiles: { username: string; display_name?: string | null } | null;
   message_reactions?: { reaction: string; user_id: string }[];
 }
 
@@ -29,9 +29,10 @@ interface Gif {
   url: string;
 }
 
-export function ChatView({ rooms, currentUserId }: { rooms: Room[]; currentUserId: string }) {
+export function ChatView({ rooms, currentUserId, canManageCommunities }: { rooms: Room[]; currentUserId: string; canManageCommunities: boolean }) {
   const channels = rooms.filter((r) => r.room_type === "channel");
   const servers = rooms.filter((r) => r.room_type === "server");
+  const [dms, setDms] = useState<Room[]>([]);
   const [activeServer, setActiveServer] = useState(servers[0]?.id ?? "");
   const [activeRoom, setActiveRoom] = useState(
     channels.find((c) => c.parent_room_id === servers[0]?.id)?.id ?? channels[0]?.id ?? ""
@@ -39,24 +40,40 @@ export function ChatView({ rooms, currentUserId }: { rooms: Room[]; currentUserI
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [username, setUsername] = useState("");
+  const [communityName, setCommunityName] = useState("");
+  const [roomName, setRoomName] = useState("");
   const [gifOpen, setGifOpen] = useState(false);
   const [gifQuery, setGifQuery] = useState("");
   const [gifs, setGifs] = useState<Gif[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const serverChannels = channels.filter((c) => c.parent_room_id === activeServer);
-  const activeRoomName = channels.find((c) => c.id === activeRoom)?.name ?? "";
+  const activeRoomData = rooms.find((c) => c.id === activeRoom) ?? dms.find((c) => c.id === activeRoom);
+  const activeRoomName = activeRoomData?.name ?? "";
+
+  useEffect(() => {
+    void fetch("/api/chat/dms").then(async (res) => {
+      if (res.ok) setDms((await res.json()).conversations ?? []);
+    });
+  }, []);
 
   useEffect(() => {
     if (!activeRoom) return;
     let cancelled = false;
+    setMessages([]);
+    setLoading(true);
 
     async function load() {
       const res = await fetch(`/api/chat/messages?room_id=${activeRoom}`);
-      if (!res.ok) return;
-      const json = await res.json();
-      if (cancelled) return;
-      setMessages(json.messages ?? []);
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        if (!cancelled) { setError(json.error ?? "Could not load chat messages"); setLoading(false); }
+      } else {
+        const json = await res.json();
+        if (!cancelled) { setMessages(json.messages ?? []); setError(""); setLoading(false); }
+      }
     }
     void load();
 
@@ -69,9 +86,12 @@ export function ChatView({ rooms, currentUserId }: { rooms: Room[]; currentUserI
         () => void load()
       )
       .subscribe();
+    // Realtime is not enabled on every Supabase project; polling keeps chat usable there too.
+    const refreshTimer = window.setInterval(() => void load(), 8000);
 
     return () => {
       cancelled = true;
+      window.clearInterval(refreshTimer);
       void supabase.removeChannel(channel);
     };
   }, [activeRoom]);
@@ -95,7 +115,31 @@ export function ChatView({ rooms, currentUserId }: { rooms: Room[]; currentUserI
       const json = await res.json().catch(() => ({}));
       setError(json.error ?? "Could not send");
       setInput(content);
+    } else {
+      const refresh = await fetch(`/api/chat/messages?room_id=${activeRoom}`);
+      if (refresh.ok) setMessages((await refresh.json()).messages ?? []);
     }
+  }
+
+  async function startDm(e: React.FormEvent) {
+    e.preventDefault();
+    const res = await fetch("/api/chat/dms", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username }) });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) { setError(json.error ?? "Could not start private message"); return; }
+    const conversation = json.conversation as Room;
+    setDms((prev) => [conversation, ...prev.filter((dm) => dm.id !== conversation.id)]);
+    setActiveRoom(conversation.id);
+    setUsername("");
+    setError("");
+  }
+
+  async function changeCommunity(action: "create-community" | "create-room" | "remove", room?: Room) {
+    if (action === "remove" && room && !window.confirm(`Remove ${room.name}? ${room.room_type === "server" ? "This also removes all rooms and message history inside it." : "This also removes its message history."}`)) return;
+    const response = action === "remove" && room
+      ? await fetch("/api/chat/communities", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: room.id, room_type: room.room_type }) })
+      : await fetch("/api/chat/communities", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(action === "create-community" ? { name: communityName } : { name: roomName, community_id: activeServer }) });
+    if (!response.ok) { const json = await response.json().catch(() => ({})); setError(json.error ?? "Could not update chat rooms"); return; }
+    window.location.reload();
   }
 
   async function searchGifs(query: string) {
@@ -176,7 +220,7 @@ export function ChatView({ rooms, currentUserId }: { rooms: Room[]; currentUserI
       </nav>
 
       {/* Channels */}
-      <aside className="hidden w-48 shrink-0 border-r border-line bg-panel p-2 sm:block">
+      <aside className="hidden w-56 shrink-0 overflow-y-auto border-r border-line bg-panel p-2 sm:block">
         <h2 className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted">
           Channels
         </h2>
@@ -198,15 +242,33 @@ export function ChatView({ rooms, currentUserId }: { rooms: Room[]; currentUserI
             </li>
           ))}
         </ul>
+        <div className="mt-4 border-t border-line pt-3">
+          <h2 className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted">Private messages</h2>
+          <form className="flex gap-1 px-1 py-2" onSubmit={startDm}>
+            <input className="min-w-0 flex-1 rounded border border-line bg-panel2 px-2 py-1 text-xs" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" aria-label="Member username" />
+            <button className="rounded bg-panel2 px-2 text-xs" type="submit">+</button>
+          </form>
+          {dms.map((dm) => <button key={dm.id} className={`block w-full truncate rounded px-2 py-1.5 text-left text-sm ${activeRoom === dm.id ? "bg-panel2" : "text-muted"}`} onClick={() => setActiveRoom(dm.id)} type="button">@ {dm.name}</button>)}
+          <p className="px-2 pt-1 text-[10px] text-muted">PM readers and moderators. Contact Owner, Admin, or Editor through Feedback.</p>
+        </div>
+        {canManageCommunities && <div className="mt-4 border-t border-line pt-3">
+          <h2 className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted">Communities (Owner/Admin)</h2>
+          <form className="space-y-1 p-1" onSubmit={(e) => { e.preventDefault(); void changeCommunity("create-community"); }}><input className="w-full rounded border border-line bg-panel2 px-2 py-1 text-xs" value={communityName} onChange={(e) => setCommunityName(e.target.value)} placeholder="New community" /><button className="w-full rounded bg-panel2 py-1 text-xs" type="submit">Create community</button></form>
+          {activeServer && <form className="space-y-1 p-1" onSubmit={(e) => { e.preventDefault(); void changeCommunity("create-room"); }}><input className="w-full rounded border border-line bg-panel2 px-2 py-1 text-xs" value={roomName} onChange={(e) => setRoomName(e.target.value)} placeholder="Room in selected community" /><button className="w-full rounded bg-panel2 py-1 text-xs" type="submit">Create room</button></form>}
+          {servers.map((server) => <button key={server.id} className="block px-2 py-1 text-left text-[10px] text-pink" onClick={() => void changeCommunity("remove", server)} type="button">Remove {server.name}</button>)}
+          {serverChannels.map((channel) => <button key={channel.id} className="block px-2 py-1 text-left text-[10px] text-pink" onClick={() => void changeCommunity("remove", channel)} type="button">Remove #{channel.name}</button>)}
+        </div>}
       </aside>
 
       {/* Messages */}
       <div className="flex min-w-0 flex-1 flex-col bg-background">
         <header className="border-b border-line px-4 py-2.5">
-          <h1 className="font-heading text-sm font-semibold"># {activeRoomName}</h1>
+          <h1 className="font-heading text-sm font-semibold">{activeRoomData?.room_type === "dm" ? `@ ${activeRoomName}` : `# ${activeRoomName}`}</h1>
         </header>
 
         <div className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
+          {loading && messages.length === 0 && <p className="text-sm text-muted">Loading messages…</p>}
+          {!loading && messages.length === 0 && !error && <p className="text-sm text-muted">No messages yet. Start the conversation.</p>}
           {messages.map((message) => {
             const grouped = new Map<string, number>();
             (message.message_reactions ?? []).forEach((r) =>
@@ -216,7 +278,7 @@ export function ChatView({ rooms, currentUserId }: { rooms: Room[]; currentUserI
               <div key={message.id} className="group">
                 <div className="flex items-baseline gap-2">
                   <span className="text-[12px] font-semibold text-accent">
-                    {message.profiles?.username ?? "reader"}
+                    {message.profiles?.display_name || message.profiles?.username || "reader"}
                   </span>
                   <time className="text-[10px] text-muted">
                     {new Date(message.created_at).toLocaleTimeString([], {

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { TopBar } from "@/components/layout/TopBar";
+import { RoleBadge } from "@/components/auth/RoleBadge";
 import { useAuth } from "@/features/auth/useAuth";
 import { BookOpen, Star, MessageCircle, Trophy } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -95,12 +96,7 @@ export default function DashboardPage() {
             <p className="text-sm text-muted">@{profile?.username}</p>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               {roles.map((role) => (
-                <span
-                  key={role}
-                  className="rounded-full border border-[#514f5b] bg-[#302f38] px-2 py-0.5 text-[9px] font-bold text-[#d1ced8]"
-                >
-                  {role}
-                </span>
+                <RoleBadge key={role} role={role} />
               ))}
             </div>
           </div>

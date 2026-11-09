@@ -52,6 +52,62 @@ body {
   min-height: 100vh;
 }
 
+@keyframes role-glitter-shift {
+  from { background-position: 100% 50%; }
+  to { background-position: -100% 50%; }
+}
+
+@keyframes role-glitter-glow {
+  from { filter: brightness(0.96); }
+  to { filter: brightness(1.22); }
+}
+
+.role-badge-glitter {
+  animation: role-glitter-glow 2s ease-in-out infinite alternate;
+}
+
+.role-badge-glitter-text {
+  color: transparent;
+  background-size: 240% 100%;
+  background-position: 100% 50%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: role-glitter-shift 3.2s linear infinite;
+}
+
+.role-badge-glitter-text--owner {
+  background-image: linear-gradient(
+    105deg,
+    #a5f3fc 0%,
+    #ffffff 24%,
+    #22d3ee 42%,
+    #ffffff 50%,
+    #67e8f9 68%,
+    #ffffff 78%,
+    #a5f3fc 100%
+  );
+}
+
+.role-badge-glitter-text--donator {
+  background-image: linear-gradient(
+    105deg,
+    #fde68a 0%,
+    #ffffff 24%,
+    #f59e0b 42%,
+    #ffffff 50%,
+    #fbbf24 68%,
+    #ffffff 78%,
+    #fde68a 100%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .role-badge-glitter,
+  .role-badge-glitter-text {
+    animation: none;
+  }
+}
+
 h1, h2, h3, h4, h5, h6 {
   font-family: "Space Grotesk", sans-serif;
 }
