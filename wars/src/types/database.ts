@@ -426,7 +426,7 @@ export interface Database {
       moderation_actions: {
         Row: {
           id: string;
-          actor_id: string;
+          actor_id: string | null;
           target_type: string;
           target_id: string;
           action: string;
@@ -436,7 +436,7 @@ export interface Database {
         };
         Insert: {
           id?: string;
-          actor_id: string;
+          actor_id?: string | null;
           target_type: string;
           target_id: string;
           action: string;
@@ -453,6 +453,29 @@ export interface Database {
           reason?: string | null;
           expires_at?: string | null;
           created_at?: string;
+        };
+      };
+      user_bans: {
+        Row: {
+          user_id: string;
+          banned_by: string | null;
+          reason: string;
+          created_at: string;
+          expires_at: string | null;
+        };
+        Insert: {
+          user_id: string;
+          banned_by?: string | null;
+          reason: string;
+          created_at?: string;
+          expires_at?: string | null;
+        };
+        Update: {
+          user_id?: string;
+          banned_by?: string;
+          reason?: string;
+          created_at?: string;
+          expires_at?: string | null;
         };
       };
       reports: {

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { hasAnyRole } from "@/lib/permissions/guards";
+import { getActiveChatBan } from "@/lib/moderation/chat-ban";
 
 const communitySchema = z.object({ name: z.string().trim().min(2).max(48) });
 const roomSchema = z.object({ community_id: z.string().uuid(), name: z.string().trim().min(2).max(48) });
@@ -17,6 +18,7 @@ async function authorized() {
 export async function POST(request: Request) {
   const { user, allowed } = await authorized();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (await getActiveChatBan(user.id)) return NextResponse.json({ error: "Your WARS chat access is banned" }, { status: 403 });
   if (!allowed) return NextResponse.json({ error: "Only Owner and Admin can manage communities" }, { status: 403 });
   const body = await request.json().catch(() => ({}));
   const roomParsed = roomSchema.safeParse(body);
@@ -43,7 +45,9 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const { allowed } = await authorized();
+  const { user, allowed } = await authorized();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (await getActiveChatBan(user.id)) return NextResponse.json({ error: "Your WARS chat access is banned" }, { status: 403 });
   if (!allowed) return NextResponse.json({ error: "Only Owner and Admin can manage communities" }, { status: 403 });
   const body = await request.json().catch(() => ({}));
   const parsed = z.object({ id: z.string().uuid(), room_type: z.enum(["server", "channel"]) }).safeParse(body);

@@ -12,6 +12,14 @@ const BLOCKED_WORDS = new Set([
   "twat", "wanker", "whore", "whores", "retard", "retarded", "retards", "hell",
 ]);
 
+// These are unambiguous racial slurs, kept separate so the chat API can apply
+// the stricter immediate-ban rule rather than only rejecting the message.
+const RACIST_SLURS = new Set([
+  "nigga", "niggas", "nigger", "niggers", "chink", "chinks", "spic", "spics",
+  "kike", "kikes", "gook", "gooks", "wetback", "wetbacks", "paki", "pakis",
+  "coon", "coons",
+]);
+
 const LEETSPEAK: Record<string, string> = {
   "0": "o",
   "1": "i",
@@ -54,4 +62,8 @@ function normalizeProfanityText(text: string): string[] {
 
 export function containsProfanity(text: string): boolean {
   return normalizeProfanityText(text).some((word) => BLOCKED_WORDS.has(word));
+}
+
+export function containsRacistSlur(text: string): boolean {
+  return normalizeProfanityText(text).some((word) => RACIST_SLURS.has(word));
 }

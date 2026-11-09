@@ -19,7 +19,7 @@ export function SeriesForm({ onCreated }: SeriesFormProps) {
   const [slug, setSlug] = useState("");
   const [slugEdited, setSlugEdited] = useState(false);
   const [description, setDescription] = useState("");
-  const [contentType, setContentType] = useState<"manga" | "light_novel">("manga");
+  const [contentType, setContentType] = useState<"manga" | "light_novel" | "anime" | "anime_movie">("manga");
   const [status, setStatus] = useState<"draft" | "published">("published");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -135,10 +135,12 @@ export function SeriesForm({ onCreated }: SeriesFormProps) {
             id="series-type"
             className="w-full rounded-lg border border-line bg-[#121217] px-2.5 py-2 text-xs text-foreground outline-none focus:border-accent"
             value={contentType}
-            onChange={(e) => setContentType(e.target.value as "manga" | "light_novel")}
+            onChange={(e) => setContentType(e.target.value as "manga" | "light_novel" | "anime" | "anime_movie")}
           >
             <option value="manga">Manga</option>
             <option value="light_novel">Light Novel</option>
+            <option value="anime">Anime Series</option>
+            <option value="anime_movie">Anime Movie</option>
           </select>
         </div>
 

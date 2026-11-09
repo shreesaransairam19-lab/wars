@@ -8,7 +8,7 @@ export const seriesSchema = z.object({
     .max(200)
     .regex(/^[a-z0-9-]+$/, "Slug can only contain lowercase letters, numbers, and hyphens"),
   description: z.string().max(5000).optional(),
-  content_type: z.enum(["manga", "light_novel"]),
+  content_type: z.enum(["manga", "light_novel", "anime", "anime_movie"]),
   cover_path: z.string().optional(),
   status: z.enum(["draft", "published", "archived"]).default("published"),
 });

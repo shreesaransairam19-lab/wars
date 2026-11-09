@@ -5,11 +5,13 @@ import Link from "next/link";
 import Image from "next/image";
 import { Bell, Menu, X } from "lucide-react";
 import { UserMenu } from "@/features/auth/UserMenu";
+import { useAuth } from "@/features/auth/useAuth";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 
 const navLinks = [
   { href: "/", label: "Home" },
-  { href: "/library", label: "Library" },
+  { href: "/manga", label: "Manga Library" },
+  { href: "/anime", label: "Anime Library" },
   { href: "/chat", label: "Chat" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/support", label: "Payment" },
@@ -17,6 +19,10 @@ const navLinks = [
 
 export function TopBar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { roles } = useAuth();
+  const visibleNavLinks = roles.some((role) => ["owner", "admin", "moderator"].includes(role))
+    ? [...navLinks, { href: "/admin/moderation", label: "Moderation" }]
+    : navLinks;
   const closeMenu = useCallback(() => setMobileOpen(false), []);
 
   return (
@@ -45,7 +51,7 @@ export function TopBar() {
 
         {/* Desktop nav */}
         <nav className="hidden items-center gap-6 md:flex" aria-label="Main navigation">
-          {navLinks.map((link) => (
+          {visibleNavLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -94,7 +100,7 @@ export function TopBar() {
           aria-label="Mobile navigation"
         >
           <div className="flex flex-col gap-1">
-            {navLinks.map((link) => (
+            {visibleNavLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}

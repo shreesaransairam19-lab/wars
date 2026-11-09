@@ -4,7 +4,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserHighestRole, hasAnyRole } from "@/lib/permissions/guards";
 import { chatMessageSchema } from "@/lib/validation/chat";
 import { sanitizeChatMessage, containsHarmfulContent } from "@/lib/security/sanitize";
-import { containsProfanity } from "@/lib/security/profanity";
+import { containsProfanity, containsRacistSlur } from "@/lib/security/profanity";
+import { getActiveChatBan } from "@/lib/moderation/chat-ban";
 import { checkRateLimit, getClientIp, RATE_LIMITS } from "@/lib/security/rate-limit";
 import { XP_REWARDS, XP_DAILY_CAPS } from "@/lib/xp/calculate";
 
@@ -44,6 +45,8 @@ export async function GET(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const activeBan = await getActiveChatBan(user.id);
+  if (activeBan) return NextResponse.json({ error: "Your WARS chat access is banned", ban: activeBan }, { status: 403 });
 
   const url = new URL(request.url);
   const roomId = url.searchParams.get("room_id");
@@ -160,6 +163,8 @@ export async function POST(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const activeBan = await getActiveChatBan(user.id);
+  if (activeBan) return NextResponse.json({ error: "Your WARS chat access is banned", ban: activeBan }, { status: 403 });
 
   const limit = checkRateLimit(
     `chat:${user.id}:${getClientIp(request)}`,
@@ -181,6 +186,15 @@ export async function POST(request: Request) {
   const content = sanitizeChatMessage(parsed.data.content);
   if (!content || containsHarmfulContent(content)) {
     return NextResponse.json({ error: "Message rejected" }, { status: 400 });
+  }
+
+  if (parsed.data.message_type === "text" && containsRacistSlur(content)) {
+    const admin = createAdminClient();
+    const reason = "Immediate ban: racist hate speech";
+    const { error: banError } = await admin.from("user_bans").upsert({ user_id: user.id, banned_by: null, reason, expires_at: null }, { onConflict: "user_id" });
+    if (banError) return NextResponse.json({ error: "Racist slurs are blocked. Automatic ban needs the latest database migration." }, { status: 503 });
+    await admin.from("moderation_actions").insert({ actor_id: null, target_type: "user", target_id: user.id, action: "ban", reason });
+    return NextResponse.json({ error: "Your account was banned from WARS chat for racist hate speech. You can submit an appeal." }, { status: 403 });
   }
 
   if (parsed.data.message_type === "text" && containsProfanity(content)) {

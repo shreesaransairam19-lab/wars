@@ -110,7 +110,7 @@ async function SeriesContent({ params }: { params: Promise<{ slug: string }> }) 
           <div className="flex flex-col">
             <div className="flex flex-wrap items-center gap-2">
               <span className="rounded-full border border-[#413d4b] bg-[#292631] px-2.5 py-1 text-[10px] font-semibold text-[#c7bfd4]">
-                {series.content_type === "manga" ? "Manga" : "Light Novel"}
+                {series.content_type === "manga" ? "Manga" : series.content_type === "anime" ? "Anime Series" : series.content_type === "anime_movie" ? "Anime Movie" : "Light Novel"}
               </span>
             </div>
 

@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { TopBar } from "@/components/layout/TopBar";
 import { ChatView, type Room } from "@/components/chat/ChatView";
 import { hasAnyRole } from "@/lib/permissions/guards";
+import { getActiveChatBan } from "@/lib/moderation/chat-ban";
 
 export default function ChatPage() {
   return (
@@ -30,6 +31,7 @@ async function ChatContent() {
   } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
+  if (await getActiveChatBan(user.id)) redirect("/banned");
   const canManageCommunities = await hasAnyRole(user.id, ["owner", "admin"]);
 
   // Keep a public General community available even if this database predates

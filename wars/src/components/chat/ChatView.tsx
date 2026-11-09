@@ -232,6 +232,10 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
     });
     if (!res.ok) {
       const json = await res.json().catch(() => ({}));
+      if (res.status === 403 && String(json.error ?? "").toLowerCase().includes("banned")) {
+        window.location.assign("/banned");
+        return;
+      }
       setSendError(json.error ?? "Could not send");
       setInput(content);
     } else if (isDm) {
@@ -340,6 +344,10 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
     });
     if (!res.ok) {
       const json = await res.json().catch(() => ({}));
+      if (res.status === 403 && String(json.error ?? "").toLowerCase().includes("banned")) {
+        window.location.assign("/banned");
+        return;
+      }
       setError(json.error ?? "Could not send GIF");
     } else if (isDm) {
       const json = await res.json().catch(() => ({}));

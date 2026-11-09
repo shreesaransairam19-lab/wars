@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getActiveChatBan } from "@/lib/moderation/chat-ban";
 
 const startSchema = z.object({ username: z.string().trim().min(2).max(32) });
 const blockedRecipientRoles = new Set(["owner", "admin", "editor"]);
@@ -18,6 +19,7 @@ export async function GET() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (await getActiveChatBan(user.id)) return NextResponse.json({ error: "Your WARS chat access is banned" }, { status: 403 });
   const admin = createAdminClient();
   // Remove legacy PM bodies left by the previous database-backed chat. Going
   // forward, /api/chat/messages only returns an ephemeral broadcast payload.
@@ -47,12 +49,14 @@ export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (await getActiveChatBan(user.id)) return NextResponse.json({ error: "Your WARS chat access is banned" }, { status: 403 });
   const parsed = startSchema.safeParse(await request.json());
   if (!parsed.success) return NextResponse.json({ error: "Enter a valid username" }, { status: 400 });
   const admin = createAdminClient();
   const { data: target } = await admin.from("profiles").select("id,username,display_name").ilike("username", parsed.data.username).maybeSingle();
   if (!target) return NextResponse.json({ error: "No WARS member found with that username" }, { status: 404 });
   if (target.id === user.id) return NextResponse.json({ error: "You cannot message yourself" }, { status: 400 });
+  if (await getActiveChatBan(target.id)) return NextResponse.json({ error: "This member is currently banned from chat" }, { status: 403 });
   const targetRoles = await rolesFor(admin, target.id);
   if (targetRoles.some((role) => blockedRecipientRoles.has(role))) {
     return NextResponse.json({ error: "Please use Feedback to contact Owner, Admin, or Editor accounts" }, { status: 403 });
