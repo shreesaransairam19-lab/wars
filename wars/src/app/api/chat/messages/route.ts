@@ -118,14 +118,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid image URL" }, { status: 400 });
   }
 
-  const { data: targetRoom } = await createAdminClient().from("chat_rooms").select("id,room_type").eq("id", parsed.data.room_id).maybeSingle();
+  const admin = createAdminClient();
+  const { data: targetRoom, error: roomError } = await admin.from("chat_rooms").select("id,room_type,visibility").eq("id", parsed.data.room_id).maybeSingle();
+  if (roomError) {
+    const isAdmin = await hasAnyRole(user.id, ["owner", "admin"]);
+    return NextResponse.json({ error: isAdmin ? `Could not verify chat room (${roomError.code ?? "database"}): ${roomError.message}` : "Could not verify this chat room" }, { status: 500 });
+  }
   if (!targetRoom) return NextResponse.json({ error: "Chat room not found" }, { status: 404 });
-  if (targetRoom.room_type === "dm") {
-    const { data: membership } = await createAdminClient().from("chat_room_members").select("room_id").eq("room_id", targetRoom.id).eq("user_id", user.id).maybeSingle();
-    if (!membership) return NextResponse.json({ error: "You are not a member of this conversation" }, { status: 403 });
+  const { data: membership, error: membershipError } = await admin
+    .from("chat_room_members")
+    .select("room_id,muted_until")
+    .eq("room_id", targetRoom.id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (membershipError) {
+    const isAdmin = await hasAnyRole(user.id, ["owner", "admin"]);
+    return NextResponse.json({ error: isAdmin ? `Could not verify chat membership (${membershipError.code ?? "database"}): ${membershipError.message}` : "Could not verify chat access" }, { status: 500 });
+  }
+  if ((targetRoom.visibility === "private" || targetRoom.room_type === "dm") && !membership) {
+    return NextResponse.json({ error: "You are not a member of this conversation" }, { status: 403 });
+  }
+  if (membership?.muted_until && new Date(membership.muted_until).getTime() > Date.now()) {
+    return NextResponse.json({ error: "You are muted in this room" }, { status: 403 });
   }
 
-  const { data: message, error } = await supabase
+  const { data: message, error } = await admin
     .from("chat_messages")
     .insert({
       room_id: parsed.data.room_id,
@@ -138,13 +155,13 @@ export async function POST(request: Request) {
     .single();
 
   if (error || !message) {
-    return NextResponse.json({ error: "Failed to send message" }, { status: 500 });
+    const isAdmin = await hasAnyRole(user.id, ["owner", "admin"]);
+    return NextResponse.json({ error: isAdmin ? `Failed to send message (${error?.code ?? "database"}): ${error?.message ?? "No message returned"}` : "Failed to send message" }, { status: 500 });
   }
 
   // XP with daily cap (service-role write only)
   const dayStart = new Date();
   dayStart.setUTCHours(0, 0, 0, 0);
-  const admin = createAdminClient();
   const { count } = await admin
     .from("xp_ledger")
     .select("id", { count: "exact", head: true })
