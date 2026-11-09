@@ -111,7 +111,7 @@ export function UploadPanel({ chapterId, assetType, onPageUploaded }: UploadPane
   return (
     <div className="rounded-lg border border-dashed border-[#4a4655] p-3">
       <label
-        htmlFor={`upload-${chapterId}`}
+        htmlFor={`upload-${chapterId}-${assetType}`}
         className="flex cursor-pointer items-center gap-2 text-[10px] text-muted hover:text-foreground"
       >
         {uploading ? (
@@ -129,7 +129,7 @@ export function UploadPanel({ chapterId, assetType, onPageUploaded }: UploadPane
             : "Upload page images"}
         </span>
         <input
-          id={`upload-${chapterId}`}
+          id={`upload-${chapterId}-${assetType}`}
           type="file"
           className="hidden"
           multiple={assetType === "page"}
