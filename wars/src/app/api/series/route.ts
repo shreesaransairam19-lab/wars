@@ -23,16 +23,15 @@ export async function GET(request: Request) {
     }
   }
 
-  let query = db
-    .from("series")
-    .select(all ? "*" : "id, title, slug, description, content_type, cover_path, status, created_at")
-    .order("created_at", { ascending: false });
+  const result = all
+    ? await db.from("series").select("*").order("created_at", { ascending: false })
+    : await db
+        .from("series")
+        .select("id, title, slug, description, content_type, cover_path, status, created_at")
+        .eq("status", "published")
+        .order("created_at", { ascending: false });
 
-  if (!all) {
-    query = query.eq("status", "published");
-  }
-
-  const { data, error } = await query;
+  const { data, error } = result;
 
   if (error) {
     console.error("Series list query failed", { code: error.code, message: error.message, details: error.details });
