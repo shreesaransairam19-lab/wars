@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { Send, ImagePlay } from "lucide-react";
 
 export interface Room {
@@ -62,37 +62,49 @@ export function ChatView({ rooms, currentUserId, canManageCommunities }: { rooms
   useEffect(() => {
     if (!activeRoom) return;
     let cancelled = false;
+    let loadingMessages = false;
     setMessages([]);
     setLoading(true);
 
     async function load() {
-      const res = await fetch(`/api/chat/messages?room_id=${activeRoom}`);
-      if (!res.ok) {
-        const json = await res.json().catch(() => ({}));
-        if (!cancelled) { setError(json.error ?? "Could not load chat messages"); setLoading(false); }
-      } else {
-        const json = await res.json();
-        if (!cancelled) { setMessages(json.messages ?? []); setError(""); setLoading(false); }
+      if (cancelled || loadingMessages || document.visibilityState === "hidden") return;
+      loadingMessages = true;
+      try {
+        const res = await fetch(`/api/chat/messages?room_id=${activeRoom}`, { cache: "no-store" });
+        if (!res.ok) {
+          const json = await res.json().catch(() => ({}));
+          if (!cancelled) setError(json.error ?? "Could not load chat messages");
+        } else {
+          const json = await res.json();
+          if (!cancelled) { setMessages(json.messages ?? []); setError(""); }
+        }
+      } catch {
+        if (!cancelled) setError("Connection interrupted. Reconnecting…");
+      } finally {
+        loadingMessages = false;
+        if (!cancelled) setLoading(false);
       }
     }
     void load();
 
-    const supabase = createClient();
-    const channel = supabase
-      .channel(`room:${activeRoom}`)
+    const supabase = isSupabaseConfigured() ? createClient() : null;
+    const channel = supabase?.channel(`room:${activeRoom}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "chat_messages", filter: `room_id=eq.${activeRoom}` },
         () => void load()
       )
       .subscribe();
-    // Realtime is not enabled on every Supabase project; polling keeps chat usable there too.
-    const refreshTimer = window.setInterval(() => void load(), 8000);
+    // Polling is the fallback when Supabase Realtime is disabled or disconnected.
+    const refreshTimer = window.setInterval(() => void load(), 2500);
+    const refreshWhenVisible = () => { if (document.visibilityState === "visible") void load(); };
+    document.addEventListener("visibilitychange", refreshWhenVisible);
 
     return () => {
       cancelled = true;
       window.clearInterval(refreshTimer);
-      void supabase.removeChannel(channel);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+      if (supabase && channel) void supabase.removeChannel(channel);
     };
   }, [activeRoom]);
 
@@ -263,7 +275,10 @@ export function ChatView({ rooms, currentUserId, canManageCommunities }: { rooms
       {/* Messages */}
       <div className="flex min-w-0 flex-1 flex-col bg-background">
         <header className="border-b border-line px-4 py-2.5">
-          <h1 className="font-heading text-sm font-semibold">{activeRoomData?.room_type === "dm" ? `@ ${activeRoomName}` : `# ${activeRoomName}`}</h1>
+          <div className="flex items-center justify-between gap-2">
+            <h1 className="font-heading text-sm font-semibold">{activeRoomData?.room_type === "dm" ? `@ ${activeRoomName}` : `# ${activeRoomName}`}</h1>
+            <span className="flex items-center gap-1.5 text-[10px] text-muted"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />Live updates</span>
+          </div>
         </header>
 
         <div className="flex-1 space-y-3 overflow-y-auto px-4 py-3">

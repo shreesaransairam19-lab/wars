@@ -59,7 +59,10 @@ export async function GET(request: Request) {
     profiles: Array.isArray(message.profiles) ? message.profiles[0] ?? null : message.profiles,
     content: message.is_deleted ? "This message was removed." : message.content,
   }));
-  return NextResponse.json({ messages });
+  return NextResponse.json(
+    { messages },
+    { headers: { "Cache-Control": "private, no-store, max-age=0" } }
+  );
 }
 
 // POST /api/chat/messages
