@@ -11,9 +11,9 @@ export const PROFILE_FRAMES = [
     id: "thunder-sparking",
     name: "Thunder Sparking",
     priceInr: 100,
-    description: "Electric blue arcs flash through a bright golden storm.",
-    gradient: "conic-gradient(from 0deg, #082f49, #38bdf8, #fef08a, #0ea5e9, #1e3a8a, #bae6fd, #082f49)",
-    glow: "conic-gradient(#0ea5e9, #e0f2fe, #fef08a, #0284c7, #38bdf8)",
+    description: "Jagged golden lightning bolts snap around your portrait in an electric flash.",
+    gradient: "conic-gradient(from 0deg, #422006, #facc15, #fff7ae, #fde047, #fff, #eab308, #713f12, #422006)",
+    glow: "conic-gradient(#eab308, #fff7ae, #facc15, #fff, #ca8a04)",
   },
   {
     id: "water-splash",

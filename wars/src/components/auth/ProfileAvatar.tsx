@@ -102,6 +102,29 @@ export function ProfileAvatar({
           </g>
         </svg>
       )}
+      {storeFrame?.id === "thunder-sparking" && (
+        <svg className="profile-avatar-thunder__overlay" viewBox="0 0 100 100" aria-hidden="true">
+          <defs>
+            <linearGradient id={`${instanceId}-thunder-bolt`} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stopColor="#fffde7" />
+              <stop offset="0.48" stopColor="#fde047" />
+              <stop offset="1" stopColor="#eab308" />
+            </linearGradient>
+            <filter id={`${instanceId}-thunder-glow`} x="-80%" y="-80%" width="260%" height="260%">
+              <feGaussianBlur stdDeviation="2.2" result="blur" />
+              <feFlood floodColor="#facc15" floodOpacity="0.95" />
+              <feComposite in2="blur" operator="in" />
+              <feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge>
+            </filter>
+          </defs>
+          <g fill={`url(#${instanceId}-thunder-bolt)`} filter={`url(#${instanceId}-thunder-glow)`}>
+            <path className="profile-avatar-thunder__bolt profile-avatar-thunder__bolt--one" d="M84 5 73 11 78 17 66 24 78 22 73 32 91 17 81 19 87 12Z" />
+            <path className="profile-avatar-thunder__bolt profile-avatar-thunder__bolt--two" d="M14 68 25 62 20 57 33 50 21 52 26 41 8 56 18 55 12 62Z" />
+            <path className="profile-avatar-thunder__bolt profile-avatar-thunder__bolt--three" d="M28 7 22 12 26 16 18 21 27 20 24 27 36 17 29 18 33 13Z" />
+            <path className="profile-avatar-thunder__bolt profile-avatar-thunder__bolt--four" d="M79 76 72 81 76 85 68 90 77 89 74 96 86 86 79 87 83 82Z" />
+          </g>
+        </svg>
+      )}
     </div>
   );
 }

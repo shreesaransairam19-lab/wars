@@ -252,15 +252,43 @@ body {
 }
 
 .profile-avatar-frame--thunder-sparking::before {
-  background: conic-gradient(from 0deg, #082f49, #38bdf8, #fef08a, #0ea5e9, #1e3a8a, #bae6fd, #082f49);
-  animation: wars-avatar-frame-spin 1.8s linear infinite;
+  background: conic-gradient(from 0deg, #422006, #facc15, #fff7ae, #fde047, #fff, #eab308, #713f12, #422006);
+  animation: wars-avatar-frame-spin 1.45s linear infinite;
 }
 
 .profile-avatar-frame--thunder-sparking::after {
   z-index: -1;
-  inset: -5px;
-  background: radial-gradient(circle, rgba(56, 189, 248, .8), rgba(250, 204, 21, .24) 52%, transparent 76%);
-  animation: wars-avatar-frame-glow .48s ease-in-out infinite alternate;
+  inset: -6px;
+  background: radial-gradient(circle, rgba(250, 204, 21, .88), rgba(234, 179, 8, .3) 52%, transparent 76%);
+  animation: wars-avatar-frame-glow .42s ease-in-out infinite alternate;
+}
+
+.profile-avatar-thunder__overlay {
+  position: absolute;
+  z-index: 3;
+  inset: -10%;
+  width: 120%;
+  height: 120%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.profile-avatar-thunder__bolt {
+  stroke: #fffde7;
+  stroke-width: 1.1;
+  stroke-linejoin: round;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: wars-thunder-zap .72s ease-in-out infinite alternate;
+}
+
+.profile-avatar-thunder__bolt--two { animation-delay: -.3s; }
+.profile-avatar-thunder__bolt--three { animation-delay: -.52s; }
+.profile-avatar-thunder__bolt--four { animation-delay: -.16s; }
+
+@keyframes wars-thunder-zap {
+  from { opacity: .48; transform: scale(.88) rotate(-4deg); }
+  to { opacity: 1; transform: scale(1.08) rotate(4deg); }
 }
 
 .profile-avatar-frame--water-splash::before {
@@ -336,7 +364,8 @@ body {
   .profile-avatar-frame--water-splash::after,
   .profile-avatar-frame--fire-blast::after,
   .profile-avatar-fang__top,
-  .profile-avatar-fang__bottom {
+  .profile-avatar-fang__bottom,
+  .profile-avatar-thunder__bolt {
     animation: none;
   }
 }
