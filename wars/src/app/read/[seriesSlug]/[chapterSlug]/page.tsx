@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { createSignedStorageUrl } from "@/lib/storage/signed-url";
 import { ReaderPage } from "@/components/reader/ReaderPage";
 
 type Params = { seriesSlug: string; chapterSlug: string };
@@ -22,8 +24,12 @@ export default function ReadChapterPage({ params }: { params: Promise<Params> })
 async function ChapterReader({ params }: { params: Promise<Params> }) {
   const { seriesSlug, chapterSlug } = await params;
   const supabase = await createClient();
+  const admin = createAdminClient();
 
-  const { data: series } = await supabase
+  // Public reader routes use the server database client just like the library
+  // and series pages. Production RLS can hide published rows from the session
+  // client and incorrectly turn a valid chapter link into a 404.
+  const { data: series } = await admin
     .from("series")
     .select("*")
     .eq("slug", seriesSlug)
@@ -32,7 +38,7 @@ async function ChapterReader({ params }: { params: Promise<Params> }) {
 
   if (!series) notFound();
 
-  const { data: chapter } = await supabase
+  const { data: chapter } = await admin
     .from("chapters")
     .select("*")
     .eq("series_id", series.id)
@@ -42,7 +48,7 @@ async function ChapterReader({ params }: { params: Promise<Params> }) {
 
   if (!chapter) notFound();
 
-  const { data: chapters } = await supabase
+  const { data: chapters } = await admin
     .from("chapters")
     .select("id, title, slug, chapter_number, status")
     .eq("series_id", series.id)
@@ -77,7 +83,7 @@ async function ChapterReader({ params }: { params: Promise<Params> }) {
   let epubSignedUrl: string | null = null;
   let pdfSignedUrl: string | null = null;
   {
-    const { data: assets } = await supabase
+    const { data: assets } = await admin
       .from("chapter_assets")
       .select("storage_path, mime_type")
       .eq("chapter_id", chapter.id)
@@ -90,14 +96,9 @@ async function ChapterReader({ params }: { params: Promise<Params> }) {
     const asset = series.content_type === "manga" ? pdf : epub ?? pdf;
 
     if (asset) {
-      const slashIndex = asset.storage_path.indexOf("/");
-      const bucket = asset.storage_path.slice(0, slashIndex);
-      const path = asset.storage_path.slice(slashIndex + 1);
-      const { data: signed } = await supabase.storage
-        .from(bucket)
-        .createSignedUrl(path, 3600);
-      if (asset.mime_type === "application/pdf") pdfSignedUrl = signed?.signedUrl ?? null;
-      else epubSignedUrl = signed?.signedUrl ?? null;
+      const signedUrl = await createSignedStorageUrl(asset.storage_path);
+      if (asset.mime_type === "application/pdf") pdfSignedUrl = signedUrl;
+      else epubSignedUrl = signedUrl;
     }
   }
 
