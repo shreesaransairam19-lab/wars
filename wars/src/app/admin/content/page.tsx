@@ -42,13 +42,13 @@ export default function AdminContentPage() {
   const fetchSeries = useCallback(async () => {
     try {
       const res = await fetch("/api/series?all=true");
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Could not load series");
-      if (!Array.isArray(data.series)) throw new Error("The server returned an invalid series list");
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error ?? `Could not load series (HTTP ${res.status})`);
+      if (!data || !Array.isArray(data.series)) throw new Error("The server returned an invalid series list");
       setSeriesList(data.series);
       setSeriesError("");
-    } catch {
-      setSeriesError("The series list could not refresh. Reload this page to retry.");
+    } catch (error) {
+      setSeriesError(error instanceof Error ? error.message : "The series list could not refresh.");
     }
   }, []);
 

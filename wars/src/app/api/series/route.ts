@@ -22,7 +22,11 @@ export async function GET(request: Request) {
   const { data, error } = await query;
 
   if (error) {
-    return NextResponse.json({ error: "Failed to fetch series" }, { status: 500 });
+    console.error("Series list query failed", { code: error.code, message: error.message, details: error.details });
+    return NextResponse.json(
+      { error: all ? `Failed to fetch series: ${error.message}` : "Failed to fetch series" },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json({ series: data });
