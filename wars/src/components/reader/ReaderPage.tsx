@@ -40,6 +40,7 @@ interface ReaderPageProps {
   initialPosition?: number;
   initialCfi?: string;
   epubSignedUrl?: string | null;
+  pdfSignedUrl?: string | null;
 }
 
 export function ReaderPage({
@@ -50,6 +51,7 @@ export function ReaderPage({
   initialPosition = 0,
   initialCfi,
   epubSignedUrl,
+  pdfSignedUrl,
 }: ReaderPageProps) {
   const { user } = useAuth();
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -170,6 +172,24 @@ export function ReaderPage({
           <div className="grid h-[60vh] place-items-center text-sm text-muted">
             Loading reader...
           </div>
+        ) : pdfSignedUrl ? (
+          <div className="mx-auto flex min-h-[70vh] w-full max-w-5xl flex-col gap-2 p-3">
+            <div className="flex justify-end">
+              <a
+                href={pdfSignedUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground"
+              >
+                Open PDF in new tab
+              </a>
+            </div>
+            <iframe
+              src={pdfSignedUrl}
+              title={`${series.title} chapter ${chapter.chapter_number} PDF`}
+              className="min-h-[75vh] flex-1 rounded-lg border border-line bg-white"
+            />
+          </div>
         ) : isManga ? (
           <MangaReader
             assets={assets}
@@ -183,7 +203,7 @@ export function ReaderPage({
           <NovelReader epubUrl={epubSignedUrl} initialCfi={initialCfi} onLocationChange={saveNovelProgress} />
         ) : (
           <div className="mx-auto max-w-md px-4 py-16 text-center text-sm text-muted">
-            EPUB file not available yet. Upload the novel file in the admin panel.
+            Chapter document not available yet. Upload an EPUB or PDF in the admin panel.
           </div>
         )}
       </main>

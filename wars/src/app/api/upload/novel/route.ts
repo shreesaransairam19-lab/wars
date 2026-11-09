@@ -2,10 +2,10 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { hasAnyRole } from "@/lib/permissions/guards";
-import { generateStoragePath, validateNovelFile } from "@/lib/security/file-validation";
+import { generateStoragePath, validateDocumentFile } from "@/lib/security/file-validation";
 
-// EPUB bytes go directly from the browser to Supabase Storage. Sending them
-// through a Vercel function hits Vercel's request body limit for ordinary books.
+// Chapter documents go directly from the browser to Storage to avoid the
+// serverless function request body limit for larger files.
 export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   const name = typeof body?.name === "string" ? body.name : "";
   const type = typeof body?.type === "string" ? body.type : "";
   const size = Number(body?.size);
-  const validation = validateNovelFile({ name, type, size });
+  const validation = validateDocumentFile({ name, type, size });
   if (!chapterId || !validation.valid) {
     return NextResponse.json({ error: validation.error ?? "Chapter is required" }, { status: 400 });
   }
@@ -27,7 +27,8 @@ export async function POST(request: Request) {
   const { data: chapter } = await supabase.from("chapters").select("id").eq("id", chapterId).maybeSingle();
   if (!chapter) return NextResponse.json({ error: "Chapter not found" }, { status: 404 });
 
-  const path = generateStoragePath(chapterId, "epub");
+  const extension = name.toLowerCase().endsWith(".pdf") ? "pdf" : "epub";
+  const path = generateStoragePath(chapterId, extension);
   const admin = createAdminClient();
   const { data, error } = await admin.storage.from("chapter-assets").createSignedUploadUrl(path);
   if (error || !data) {
@@ -48,8 +49,9 @@ export async function PUT(request: Request) {
   const path = typeof body?.path === "string" ? body.path : "";
   const name = typeof body?.name === "string" ? body.name : "";
   const size = Number(body?.size);
-  const mimeType = typeof body?.type === "string" && body.type ? body.type : "application/epub+zip";
-  const validation = validateNovelFile({ name, type: mimeType, size });
+  const fallbackType = name.toLowerCase().endsWith(".pdf") ? "application/pdf" : "application/epub+zip";
+  const mimeType = typeof body?.type === "string" && body.type ? body.type : fallbackType;
+  const validation = validateDocumentFile({ name, type: mimeType, size });
   if (!chapterId || !validation.valid || !path.startsWith(`${chapterId}/`)) {
     return NextResponse.json({ error: validation.error ?? "Invalid upload details" }, { status: 400 });
   }
@@ -57,7 +59,7 @@ export async function PUT(request: Request) {
   const admin = createAdminClient();
   const { data: object, error: storageError } = await admin.storage.from("chapter-assets").info(path);
   if (storageError || !object || Number(object.metadata?.size ?? object.size ?? 0) !== size) {
-    return NextResponse.json({ error: "Uploaded EPUB could not be verified in storage" }, { status: 400 });
+    return NextResponse.json({ error: "Uploaded document could not be verified in storage" }, { status: 400 });
   }
 
   const { error } = await admin.from("chapter_assets").insert({

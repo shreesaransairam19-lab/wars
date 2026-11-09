@@ -7,6 +7,7 @@ import { useAuth } from "@/features/auth/useAuth";
 import { SeriesForm } from "@/components/admin/SeriesForm";
 import { ChapterForm } from "@/components/admin/ChapterForm";
 import { UploadPanel } from "@/components/admin/UploadPanel";
+import { CoverUpload } from "@/components/admin/CoverUpload";
 import { ChevronDown, ChevronRight, Trash2 } from "lucide-react";
 
 interface Series {
@@ -14,6 +15,7 @@ interface Series {
   title: string;
   slug: string;
   content_type: string;
+  cover_path?: string | null;
   status: string;
   chapters?: { count: number }[];
 }
@@ -258,6 +260,14 @@ export default function AdminContentPage() {
                   {/* Expanded: chapters + add form */}
                   {expandedSeries === series.id && (
                     <div className="border-t border-line px-4 py-3">
+                      <div className="mb-3 flex flex-wrap items-center gap-3">
+                        <CoverUpload
+                          seriesId={series.id}
+                          hasCover={Boolean(series.cover_path)}
+                          onUploaded={fetchSeries}
+                        />
+                        <span className="text-[10px] text-muted">Front cover: JPG, PNG, WebP, or GIF (max 5 MB)</span>
+                      </div>
                       <div className="mb-3">
                         <ChapterForm
                           seriesId={series.id}
@@ -296,11 +306,18 @@ export default function AdminContentPage() {
                                       onPageUploaded={() => void refreshChapters(series.id)}
                                     />
                                   ) : (
-                                    <UploadPanel
-                                      chapterId={chapter.id}
-                                      assetType="page"
-                                      onPageUploaded={() => void refreshChapters(series.id)}
-                                    />
+                                    <>
+                                      <UploadPanel
+                                        chapterId={chapter.id}
+                                        assetType="page"
+                                        onPageUploaded={() => void refreshChapters(series.id)}
+                                      />
+                                      <UploadPanel
+                                        chapterId={chapter.id}
+                                        assetType="document"
+                                        onPageUploaded={() => void refreshChapters(series.id)}
+                                      />
+                                    </>
                                   )}
                                   <button
                                     type="button"
@@ -317,7 +334,7 @@ export default function AdminContentPage() {
                                   {chapter.chapter_assets?.map((asset) => (
                                     <li key={asset.id} className="flex items-center justify-between gap-2 text-[10px]">
                                       <span className="truncate text-muted">
-                                        {asset.asset_type === "file" ? "EPUB" : "Page"} · {asset.storage_path.split("/").at(-1)}
+                                        {asset.asset_type === "file" ? (asset.storage_path.toLowerCase().endsWith(".pdf") ? "PDF" : "EPUB") : "Page"} · {asset.storage_path.split("/").at(-1)}
                                       </span>
                                       <button
                                         type="button"

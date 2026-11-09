@@ -7,6 +7,7 @@ import { ReviewSection } from "@/components/series/ReviewSection";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { hasRole } from "@/lib/permissions/guards";
+import { createSignedStorageUrl } from "@/lib/storage/signed-url";
 
 export function generateStaticParams() {
   return [{ slug: "death-note" }, { slug: "orv" }];
@@ -18,6 +19,7 @@ interface SeriesView {
   slug: string;
   description: string;
   content_type: string;
+  cover_url: string | null;
   chapters: { id: string; title: string; slug: string; number: number }[];
 }
 
@@ -95,6 +97,7 @@ async function SeriesContent({ params }: { params: Promise<{ slug: string }> }) 
         slug: data.slug,
         description: data.description ?? "",
         content_type: data.content_type,
+        cover_url: await createSignedStorageUrl(data.cover_path),
         chapters: (data.chapters ?? [])
           .filter((c: { status: string }) => c.status === "published")
           .sort((a: { chapter_number: number }, b: { chapter_number: number }) => a.chapter_number - b.chapter_number)
@@ -129,10 +132,12 @@ async function SeriesContent({ params }: { params: Promise<{ slug: string }> }) 
         </Link>
 
         <div className="mb-8 grid gap-6 md:grid-cols-[180px_1fr]">
-          <div className="grid min-h-[240px] place-items-center overflow-hidden rounded-xl bg-[#09090b] md:min-h-[260px]">
-            <span className="font-heading text-5xl font-bold text-purple">
-              {series.title[0]}
-            </span>
+          <div className="relative grid min-h-[240px] place-items-center overflow-hidden rounded-xl bg-[#09090b] md:min-h-[260px]">
+            {series.cover_url ? (
+              <img src={series.cover_url} alt={`${series.title} cover`} className="absolute inset-0 h-full w-full object-cover" />
+            ) : (
+              <span className="font-heading text-5xl font-bold text-purple">{series.title[0]}</span>
+            )}
           </div>
 
           <div className="flex flex-col">

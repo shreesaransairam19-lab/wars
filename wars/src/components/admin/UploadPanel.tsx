@@ -2,12 +2,12 @@
 
 import { useState, useCallback } from "react";
 import { Upload, Loader2 } from "lucide-react";
-import { validateImageFile, validateNovelFile } from "@/lib/security/file-validation";
+import { validateDocumentFile, validateImageFile } from "@/lib/security/file-validation";
 import { createClient } from "@/lib/supabase/client";
 
 interface UploadPanelProps {
   chapterId: string;
-  assetType: "page" | "novel";
+  assetType: "page" | "novel" | "document";
   onPageUploaded?: () => void;
 }
 
@@ -27,7 +27,7 @@ export function UploadPanel({ chapterId, assetType, onPageUploaded }: UploadPane
       for (const file of Array.from(files)) {
         const meta = { name: file.name, type: file.type, size: file.size };
         const validation =
-          assetType === "novel" ? validateNovelFile(meta) : validateImageFile(meta);
+          assetType !== "page" ? validateDocumentFile(meta) : validateImageFile(meta);
 
         if (!validation.valid) {
           results.push(`✗ ${file.name}: ${validation.error}`);
@@ -36,7 +36,7 @@ export function UploadPanel({ chapterId, assetType, onPageUploaded }: UploadPane
         }
 
         try {
-          if (assetType === "novel") {
+          if (assetType !== "page") {
             const signedRes = await fetch("/api/upload/novel", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -48,12 +48,12 @@ export function UploadPanel({ chapterId, assetType, onPageUploaded }: UploadPane
               }),
             });
             const signed = await signedRes.json();
-            if (!signedRes.ok) throw new Error(signed.error ?? "Could not start EPUB upload");
+            if (!signedRes.ok) throw new Error(signed.error ?? "Could not start document upload");
 
             const { error: uploadError } = await createClient()
               .storage.from(signed.bucket)
               .uploadToSignedUrl(signed.path, signed.token, file, {
-                contentType: file.type || "application/epub+zip",
+                contentType: file.type || (file.name.toLowerCase().endsWith(".pdf") ? "application/pdf" : "application/epub+zip"),
                 upsert: false,
               });
             if (uploadError) throw new Error(uploadError.message);
@@ -70,7 +70,7 @@ export function UploadPanel({ chapterId, assetType, onPageUploaded }: UploadPane
               }),
             });
             const complete = await completeRes.json();
-            if (!completeRes.ok) throw new Error(complete.error ?? "Could not attach EPUB to chapter");
+            if (!completeRes.ok) throw new Error(complete.error ?? "Could not attach document to chapter");
             results.push(`✓ ${file.name}`);
             setProgress([...results]);
             continue;
@@ -123,7 +123,9 @@ export function UploadPanel({ chapterId, assetType, onPageUploaded }: UploadPane
           {uploading
             ? "Uploading…"
             : assetType === "novel"
-            ? "Upload EPUB file"
+            ? "Upload EPUB or PDF"
+            : assetType === "document"
+            ? "Upload PDF document"
             : "Upload page images"}
         </span>
         <input
@@ -131,7 +133,7 @@ export function UploadPanel({ chapterId, assetType, onPageUploaded }: UploadPane
           type="file"
           className="hidden"
           multiple={assetType === "page"}
-          accept={assetType === "novel" ? ".epub" : "image/jpeg,image/png,image/webp"}
+          accept={assetType === "page" ? "image/jpeg,image/png,image/webp" : assetType === "document" ? ".pdf,application/pdf" : ".epub,.pdf,application/epub+zip,application/pdf"}
           disabled={uploading}
           onChange={(e) => {
             if (e.target.files?.length) {

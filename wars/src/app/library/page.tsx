@@ -2,33 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { TopBar } from "@/components/layout/TopBar";
 import { createClient } from "@/lib/supabase/server";
-import { isSupabaseConfigured } from "@/lib/supabase/client";
-
-// Placeholder used only when Supabase is not configured (local UI-only dev).
-const placeholderSeries = [
-  {
-    id: "death-note",
-    title: "Death Note",
-    slug: "death-note",
-    description:
-      "A high school student finds a supernatural notebook that kills anyone whose name is written in it.",
-    content_type: "manga" as const,
-    chapter_count: 12,
-    avg_rating: 4.8,
-    rating_count: 24,
-  },
-  {
-    id: "orv",
-    title: "Omniscient Reader's Viewpoint",
-    slug: "orv",
-    description:
-      "A man who read a web novel finds himself living through its apocalyptic storyline.",
-    content_type: "light_novel" as const,
-    chapter_count: 8,
-    avg_rating: 4.9,
-    rating_count: 18,
-  },
-];
+import { createSignedStorageUrl } from "@/lib/storage/signed-url";
 
 function Stars({ rating }: { rating: number }) {
   return (
@@ -45,21 +19,21 @@ interface LibrarySeries {
   slug: string;
   description: string;
   content_type: string;
+  cover_url: string | null;
   chapter_count: number;
   avg_rating: number;
   rating_count: number;
 }
 
 async function loadSeries(): Promise<LibrarySeries[]> {
-  if (!isSupabaseConfigured()) return placeholderSeries;
   const supabase = await createClient();
   const { data } = await supabase
     .from("series")
-    .select("id, title, slug, description, content_type, chapters(id), ratings(rating)")
+    .select("id, title, slug, description, content_type, cover_path, chapters(id), ratings(rating)")
     .eq("status", "published")
     .order("created_at", { ascending: false });
-  if (!data || data.length === 0) return placeholderSeries;
-  return data.map((s) => {
+  if (!data) return [];
+  return Promise.all(data.map(async (s) => {
     const ratings = (s.ratings ?? []) as { rating: number }[];
     const avg = ratings.length
       ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length
@@ -70,11 +44,12 @@ async function loadSeries(): Promise<LibrarySeries[]> {
       slug: s.slug,
       description: s.description ?? "",
       content_type: s.content_type,
+      cover_url: await createSignedStorageUrl(s.cover_path),
       chapter_count: (s.chapters ?? []).length,
       avg_rating: Math.round(avg * 10) / 10,
       rating_count: ratings.length,
     };
-  });
+  }));
 }
 
 export default function LibraryPage() {
@@ -155,11 +130,13 @@ async function SeriesGrid() {
               href={`/series/${series.slug}`}
               className="group grid min-h-[160px] grid-cols-[110px_1fr] gap-4 rounded-[12px] border border-line bg-panel p-3 transition-all hover:-translate-y-0.5 hover:border-[#655b78] hover:bg-[#26242e] md:grid-cols-[120px_1fr]"
             >
-              {/* Cover placeholder */}
+              {/* Series front cover */}
               <div className="relative grid min-h-[140px] place-items-center overflow-hidden rounded-lg bg-[#09090b]">
-                <span className="font-heading text-3xl font-bold text-purple">
-                  {series.title[0]}
-                </span>
+                {series.cover_url ? (
+                  <img src={series.cover_url} alt={`${series.title} cover`} className="absolute inset-0 h-full w-full object-cover" />
+                ) : (
+                  <span className="font-heading text-3xl font-bold text-purple">{series.title[0]}</span>
+                )}
                 <span className="absolute bottom-1.5 right-1.5 rounded-md border border-white/15 bg-[#111116]/85 px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-[#f5f2fa]">
                   {series.chapter_count} ch
                 </span>

@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { hasAnyRole } from "@/lib/permissions/guards";
 import {
   validateImageFile,
-  validateNovelFile,
+  validateDocumentFile,
   generateStoragePath,
 } from "@/lib/security/file-validation";
 import { checkRateLimit, RATE_LIMITS, getClientIp } from "@/lib/security/rate-limit";
@@ -65,12 +65,12 @@ export async function POST(request: Request) {
     }
     storagePath = generateStoragePath(seriesId, file.name.split(".").pop() ?? "jpg");
   } else if (assetType === "novel") {
-    validation = validateNovelFile(fileMeta);
+    validation = validateDocumentFile(fileMeta);
     bucket = "chapter-assets";
     if (!chapterId) {
       return NextResponse.json({ error: "chapter_id required for novel file" }, { status: 400 });
     }
-    storagePath = generateStoragePath(chapterId, "epub");
+    storagePath = generateStoragePath(chapterId, file.name.toLowerCase().endsWith(".pdf") ? "pdf" : "epub");
   } else if (assetType === "page") {
     validation = validateImageFile(fileMeta);
     bucket = "chapter-assets";
@@ -96,7 +96,7 @@ export async function POST(request: Request) {
   const { error: uploadError } = await supabase.storage
     .from(bucket)
     .upload(storagePath, buffer, {
-      contentType: file.type,
+      contentType: file.type || (file.name.toLowerCase().endsWith(".pdf") ? "application/pdf" : "application/epub+zip"),
       upsert: false,
     });
 
@@ -113,7 +113,7 @@ export async function POST(request: Request) {
       chapter_id: chapterId,
       asset_type: assetType === "novel" ? "file" : "page",
       storage_path: `${bucket}/${storagePath}`,
-      mime_type: file.type,
+      mime_type: file.type || (file.name.toLowerCase().endsWith(".pdf") ? "application/pdf" : "application/epub+zip"),
       byte_size: file.size,
       page_number: pageNumber ? parseInt(pageNumber, 10) : null,
       order_index: orderIndex ? parseInt(orderIndex, 10) : 0,

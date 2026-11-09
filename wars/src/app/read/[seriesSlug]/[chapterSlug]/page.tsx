@@ -75,13 +75,19 @@ async function ChapterReader({ params }: { params: Promise<Params> }) {
   }
 
   let epubSignedUrl: string | null = null;
-  if (series.content_type !== "manga") {
-    const { data: asset } = await supabase
+  let pdfSignedUrl: string | null = null;
+  {
+    const { data: assets } = await supabase
       .from("chapter_assets")
-      .select("*")
+      .select("storage_path, mime_type")
       .eq("chapter_id", chapter.id)
       .eq("asset_type", "file")
-      .maybeSingle();
+      .order("order_index", { ascending: true });
+
+    const files = assets ?? [];
+    const pdf = files.find((asset) => asset.mime_type === "application/pdf");
+    const epub = files.find((asset) => asset.mime_type === "application/epub+zip");
+    const asset = series.content_type === "manga" ? pdf : epub ?? pdf;
 
     if (asset) {
       const slashIndex = asset.storage_path.indexOf("/");
@@ -90,7 +96,8 @@ async function ChapterReader({ params }: { params: Promise<Params> }) {
       const { data: signed } = await supabase.storage
         .from(bucket)
         .createSignedUrl(path, 3600);
-      epubSignedUrl = signed?.signedUrl ?? null;
+      if (asset.mime_type === "application/pdf") pdfSignedUrl = signed?.signedUrl ?? null;
+      else epubSignedUrl = signed?.signedUrl ?? null;
     }
   }
 
@@ -102,6 +109,7 @@ async function ChapterReader({ params }: { params: Promise<Params> }) {
       nextChapter={nextChapter}
       initialPosition={initialPosition}
       epubSignedUrl={epubSignedUrl}
+      pdfSignedUrl={pdfSignedUrl}
     />
   );
 }
