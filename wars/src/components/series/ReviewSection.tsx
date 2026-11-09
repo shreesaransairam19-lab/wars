@@ -9,7 +9,7 @@ interface Review {
   content: string;
   created_at: string;
   status?: string;
-  profiles: { id: string; username: string; avatar_path: string | null; role?: string | null } | null;
+  profiles: { id: string; username: string; avatar_path: string | null; role?: string | null; frame_id?: string | null } | null;
   chapters: { chapter_number: number } | null;
 }
 
@@ -126,6 +126,7 @@ export function ReviewSection({
                   avatarPath={review.profiles?.avatar_path}
                   name={review.profiles?.username ?? "Reader"}
                   role={review.profiles?.role}
+                  frameId={review.profiles?.frame_id}
                   size={28}
                 />
                 <span>{review.profiles?.username ?? "reader"}{review.chapters && ` · Ch. ${review.chapters.chapter_number}`}</span>

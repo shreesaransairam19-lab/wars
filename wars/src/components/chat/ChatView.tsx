@@ -22,7 +22,7 @@ interface Message {
   message_type: string;
   created_at: string;
   sender_id: string;
-  profiles: { username: string; display_name?: string | null; avatar_path?: string | null; role?: string | null } | null;
+  profiles: { username: string; display_name?: string | null; avatar_path?: string | null; role?: string | null; frame_id?: string | null } | null;
   message_reactions?: { reaction: string; user_id: string }[];
 }
 
@@ -488,6 +488,7 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
                     avatarPath={message.profiles?.avatar_path}
                     name={message.profiles?.display_name || message.profiles?.username || "Reader"}
                     role={message.profiles?.role}
+                    frameId={message.profiles?.frame_id}
                     size={24}
                   />
                   <RoleName role={message.profiles?.role} className="role-name-glow text-[12px] font-semibold">

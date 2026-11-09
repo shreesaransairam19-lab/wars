@@ -9,6 +9,12 @@ const roleNameStyles: Record<string, string> = {
   reader: "text-white",
 };
 
+const rolePriority = ["owner", "admin", "editor", "moderator", "donator", "reader"];
+
+export function getPrimaryRole(roles: readonly string[]) {
+  return rolePriority.find((role) => roles.includes(role)) ?? "reader";
+}
+
 export function RoleName({
   role,
   children,

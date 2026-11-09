@@ -41,6 +41,21 @@ export interface Database {
           updated_at?: string;
         };
       };
+      profile_frame_orders: {
+        Row: { id: string; user_id: string; frame_id: string; price_inr: number; status: string; payment_reference: string | null; xp_awarded: number; created_at: string; submitted_at: string | null; reviewed_at: string | null; reviewed_by: string | null };
+        Insert: { id?: string; user_id: string; frame_id: string; price_inr: number; status?: string; payment_reference?: string | null; xp_awarded?: number; created_at?: string; submitted_at?: string | null; reviewed_at?: string | null; reviewed_by?: string | null };
+        Update: { status?: string; payment_reference?: string | null; submitted_at?: string | null; reviewed_at?: string | null; reviewed_by?: string | null; xp_awarded?: number };
+      };
+      user_profile_frames: {
+        Row: { user_id: string; frame_id: string; purchased_at: string };
+        Insert: { user_id: string; frame_id: string; purchased_at?: string };
+        Update: never;
+      };
+      profile_frame_equipped: {
+        Row: { user_id: string; frame_id: string; equipped_at: string };
+        Insert: { user_id: string; frame_id: string; equipped_at?: string };
+        Update: { frame_id?: string; equipped_at?: string };
+      };
       roles: {
         Row: {
           id: number;
@@ -645,6 +660,12 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+      };
+    };
+    Functions: {
+      review_profile_frame_order: {
+        Args: { p_order_id: string; p_reviewer_id: string; p_action: string };
+        Returns: Json;
       };
     };
   };

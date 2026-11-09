@@ -13,6 +13,7 @@ const navLinks = [
   { href: "/library", label: "Library" },
   { href: "/chat", label: "Chat" },
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/profile/frames", label: "Store" },
   { href: "/support", label: "Payment" },
 ];
 

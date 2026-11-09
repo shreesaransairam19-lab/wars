@@ -44,12 +44,15 @@ export async function GET(request: Request) {
     Array.isArray(row.profiles) ? row.profiles[0] ?? null : row.profiles;
   const userIds = [...new Set(reviews.map((row) => profileFor(row)?.id).filter((id): id is string => Boolean(id)))];
   const rolesByUser = new Map<string, string>();
+  const framesByUser = new Map<string, string>();
 
   if (userIds.length > 0) {
-    const { data: roleRows, error: rolesError } = await createAdminClient()
-      .from("user_roles")
-      .select("user_id, roles(name)")
-      .in("user_id", userIds);
+    const admin = createAdminClient();
+    const [{ data: roleRows, error: rolesError }, { data: equippedFrames }] = await Promise.all([
+      admin.from("user_roles").select("user_id, roles(name)").in("user_id", userIds),
+      admin.from("profile_frame_equipped").select("user_id,frame_id").in("user_id", userIds),
+    ]);
+    for (const equipped of equippedFrames ?? []) framesByUser.set(equipped.user_id, equipped.frame_id);
     if (rolesError) {
       console.error("Could not load reviewer roles", rolesError);
     } else {
@@ -75,7 +78,7 @@ export async function GET(request: Request) {
     return {
       ...row,
       profiles: profile
-        ? { ...profile, role: rolesByUser.get(profile.id) ?? "reader" }
+        ? { ...profile, role: rolesByUser.get(profile.id) ?? "reader", frame_id: framesByUser.get(profile.id) ?? null }
         : null,
     };
   });

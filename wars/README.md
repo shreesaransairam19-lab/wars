@@ -45,7 +45,7 @@ npx supabase link --project-ref <project-ref>
 npm run db:migrate
 ```
 
-The migrations create the required private storage buckets and policies. They also define the separate manga and anime content types. Apply pending migrations before adding anime titles.
+The migrations create the required private storage buckets and policies. They also define the separate manga and anime content types. Apply pending migrations before adding anime titles or enabling profile frame purchases and selection. The profile frame store is added by migration `0013_profile_frame_store.sql`.
 
 ## Tests
 

@@ -6,6 +6,7 @@ import { User, LogOut, Shield, Settings } from "lucide-react";
 import { useAuth } from "@/features/auth/useAuth";
 import { RoleBadge } from "@/components/auth/RoleBadge";
 import { ProfileAvatar } from "@/components/auth/ProfileAvatar";
+import { getPrimaryRole } from "@/components/auth/RoleName";
 
 export function UserMenu() {
   const { user, profile, roles, loading, signOut } = useAuth();
@@ -41,9 +42,11 @@ export function UserMenu() {
 
   const displayName =
     profile?.display_name || profile?.username || user.email || "User";
+  const primaryRole = getPrimaryRole(roles);
   const isStaff = roles.some((r) =>
     ["owner", "admin", "editor", "moderator"].includes(r)
   );
+  const canReviewFramePayments = roles.some((r) => ["owner", "admin"].includes(r));
 
   return (
     <div ref={menuRef} className="relative">
@@ -55,7 +58,7 @@ export function UserMenu() {
         aria-expanded={open}
         aria-haspopup="true"
       >
-        <ProfileAvatar userId={user.id} avatarPath={profile?.avatar_path} name={displayName} role={primaryRole} size={28} />
+        <ProfileAvatar userId={user.id} avatarPath={profile?.avatar_path} name={displayName} role={primaryRole} frameId={profile?.equipped_frame_id} size={28} />
         <span className="hidden max-w-[100px] truncate text-xs font-semibold text-foreground md:block">
           {displayName}
         </span>
@@ -78,6 +81,26 @@ export function UserMenu() {
           </div>
 
           <div className="mt-1 flex flex-col">
+            <Link
+              href="/profile/frames"
+              className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted transition-colors hover:bg-panel2 hover:text-foreground"
+              onClick={() => setOpen(false)}
+            >
+              <span aria-hidden="true">✦</span>
+              Profile frames
+            </Link>
+
+            {canReviewFramePayments && (
+              <Link
+                href="/admin/frames"
+                className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted transition-colors hover:bg-panel2 hover:text-foreground"
+                onClick={() => setOpen(false)}
+              >
+                <Shield className="h-4 w-4" />
+                Frame payments
+              </Link>
+            )}
+
             <Link
               href="/profile"
               className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted transition-colors hover:bg-panel2 hover:text-foreground"

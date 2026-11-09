@@ -12,6 +12,7 @@ interface Profile {
   avatar_path: string | null;
   bio: string | null;
   theme: string;
+  equipped_frame_id: string | null;
 }
 
 interface UseAuthReturn {
@@ -33,15 +34,16 @@ export function useAuth(): UseAuthReturn {
   const loadUser = useCallback(async (currentUser: User) => {
     const supabase = createClient();
 
-    const [profileRes, rolesRes] = await Promise.all([
+    const [profileRes, rolesRes, equippedRes] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", currentUser.id).single(),
       supabase
         .from("user_roles")
         .select("roles(name)")
         .eq("user_id", currentUser.id),
+      supabase.from("profile_frame_equipped").select("frame_id").eq("user_id", currentUser.id).maybeSingle(),
     ]);
 
-    setProfile(profileRes.data ?? null);
+    setProfile(profileRes.data ? { ...profileRes.data, equipped_frame_id: equippedRes.data?.frame_id ?? null } : null);
     const roleRows = (rolesRes.data ?? []) as {
       roles: { name: string } | { name: string }[] | null;
     }[];

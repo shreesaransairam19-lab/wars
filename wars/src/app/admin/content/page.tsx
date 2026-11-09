@@ -184,6 +184,11 @@ export default function AdminContentPage() {
               Promote Members
             </Link>
           )}
+          {roles.some((role) => ["owner", "admin"].includes(role)) && (
+            <Link href="/admin/frames" className="rounded-lg border border-line bg-panel px-3 py-2 text-sm text-muted hover:text-foreground">
+              Frame payments
+            </Link>
+          )}
         </div>
 
         {/* Create series */}

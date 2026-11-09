@@ -156,14 +156,17 @@ body {
 }
 
 .profile-avatar-frame--owner,
-.profile-avatar-frame--donator {
+.profile-avatar-frame--donator,
+.profile-avatar-frame--crunching-fang {
   padding: 2px;
 }
 
 .profile-avatar-frame--owner::before,
 .profile-avatar-frame--donator::before,
+.profile-avatar-frame--crunching-fang::before,
 .profile-avatar-frame--owner::after,
-.profile-avatar-frame--donator::after {
+.profile-avatar-frame--donator::after,
+.profile-avatar-frame--crunching-fang::after {
   position: absolute;
   inset: 0;
   border-radius: inherit;
@@ -217,14 +220,65 @@ body {
   animation: wars-avatar-frame-spin 3.2s linear infinite, wars-avatar-frame-glow 1.5s ease-in-out infinite alternate;
 }
 
+.profile-avatar-frame--crunching-fang::before {
+  z-index: 0;
+  inset: -1px;
+  border: 2px solid #cbd5e1;
+  background: conic-gradient(from 0deg, #111827, #f8fafc, #475569, #0f172a, #e2e8f0, #111827);
+  box-shadow: inset 0 0 7px #ef4444, 0 0 5px #ef4444;
+}
+
+.profile-avatar-frame--crunching-fang::after {
+  z-index: -1;
+  inset: -5px;
+  background: radial-gradient(circle, rgba(239, 68, 68, .75), rgba(127, 29, 29, .25) 58%, transparent 76%);
+  animation: wars-avatar-frame-glow .65s ease-in-out infinite alternate;
+}
+
+.profile-avatar-fang__overlay {
+  position: absolute;
+  z-index: 3;
+  inset: -8%;
+  width: 116%;
+  height: 116%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.profile-avatar-fang__top,
+.profile-avatar-fang__bottom {
+  transform-box: fill-box;
+  animation-duration: 1.25s;
+  animation-timing-function: cubic-bezier(.45, 0, .55, 1);
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+.profile-avatar-fang__top { transform-origin: top center; animation-name: wars-fang-bite-top; }
+.profile-avatar-fang__bottom { transform-origin: bottom center; animation-name: wars-fang-bite-bottom; }
+
+@keyframes wars-fang-bite-top {
+  from { transform: translateY(-1px) scaleY(.91); }
+  to { transform: translateY(5px) scaleY(1); }
+}
+
+@keyframes wars-fang-bite-bottom {
+  from { transform: translateY(1px) scaleY(.91); }
+  to { transform: translateY(-5px) scaleY(1); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .role-badge-glitter,
   .role-badge-glitter-text,
   .role-name-glitter,
   .profile-avatar-frame--owner::before,
   .profile-avatar-frame--donator::before,
+  .profile-avatar-frame--crunching-fang::before,
   .profile-avatar-frame--owner::after,
-  .profile-avatar-frame--donator::after {
+  .profile-avatar-frame--donator::after,
+  .profile-avatar-frame--crunching-fang::after,
+  .profile-avatar-fang__top,
+  .profile-avatar-fang__bottom {
     animation: none;
   }
 }

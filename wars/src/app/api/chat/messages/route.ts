@@ -118,11 +118,13 @@ export async function GET(request: Request) {
 
   const senderIds = [...new Set(messages.map((message) => message.sender_id))];
   const rolesByUser = new Map<string, string[]>();
+  const equippedFramesByUser = new Map<string, string>();
   if (senderIds.length > 0) {
-    const { data: roleRows } = await admin
-      .from("user_roles")
-      .select("user_id, roles(name)")
-      .in("user_id", senderIds);
+    const [{ data: roleRows }, { data: equippedFrames }] = await Promise.all([
+      admin.from("user_roles").select("user_id, roles(name)").in("user_id", senderIds),
+      admin.from("profile_frame_equipped").select("user_id,frame_id").in("user_id", senderIds),
+    ]);
+    for (const equipped of equippedFrames ?? []) equippedFramesByUser.set(equipped.user_id, equipped.frame_id);
     const assignments = (roleRows ?? []) as {
       user_id: string;
       roles: { name: string } | { name: string }[] | null;
@@ -143,7 +145,9 @@ export async function GET(request: Request) {
     const primaryRole = rolePriority.find((role) => roles.includes(role)) ?? "reader";
     return {
       ...message,
-      profiles: message.profiles ? { ...message.profiles, role: primaryRole } : null,
+      profiles: message.profiles
+        ? { ...message.profiles, role: primaryRole, frame_id: equippedFramesByUser.get(message.sender_id) ?? null }
+        : null,
     };
   });
 
@@ -250,9 +254,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Please use Feedback to contact Owner, Admin, or Editor accounts" }, { status: 403 });
     }
 
-    const [{ data: profile }, role] = await Promise.all([
+    const [{ data: profile }, role, { data: equippedFrame }] = await Promise.all([
       admin.from("profiles").select("username,display_name,avatar_path").eq("id", user.id).maybeSingle(),
       getUserHighestRole(user.id),
+      admin.from("profile_frame_equipped").select("frame_id").eq("user_id", user.id).maybeSingle(),
     ]);
     const createdAt = new Date().toISOString();
     return NextResponse.json({
@@ -269,6 +274,7 @@ export async function POST(request: Request) {
           display_name: profile.display_name,
           avatar_path: profile.avatar_path,
           role: role ?? "reader",
+          frame_id: equippedFrame?.frame_id ?? null,
         } : null,
         message_reactions: [],
       },

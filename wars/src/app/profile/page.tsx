@@ -8,6 +8,7 @@ import { ProfileAvatar } from "@/components/auth/ProfileAvatar";
 import { getPrimaryRole } from "@/components/auth/RoleName";
 import { useAuth } from "@/features/auth/useAuth";
 import { createClient } from "@/lib/supabase/client";
+import { ProfileFramesPanel } from "@/components/profile/ProfileFramesPanel";
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 
@@ -139,6 +140,7 @@ export default function ProfilePage() {
               previewSrc={previewUrl || null}
               name={displayName}
               role={primaryRole}
+              frameId={profile?.equipped_frame_id}
               size={96}
               className="border border-line"
             />
@@ -182,6 +184,14 @@ export default function ProfilePage() {
           {error && <p role="alert" className="mt-4 rounded-lg border border-[#704044] bg-[#332329] px-3 py-2 text-sm text-[#ffb2b2]">{error}</p>}
           {message && <p role="status" className="mt-4 rounded-lg border border-[#41613a] bg-[#1b2a20] px-3 py-2 text-sm text-[#b8f28a]">{message}</p>}
         </section>
+
+        <ProfileFramesPanel
+          equippedFrameId={profile?.equipped_frame_id ?? null}
+          onEquipped={() => {
+            void refreshProfile();
+            window.dispatchEvent(new Event("wars:profile-updated"));
+          }}
+        />
       </main>
     </>
   );

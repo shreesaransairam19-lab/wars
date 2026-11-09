@@ -4,6 +4,7 @@ import Link from "next/link";
 import { TopBar } from "@/components/layout/TopBar";
 import { RoleBadge } from "@/components/auth/RoleBadge";
 import { ProfileAvatar } from "@/components/auth/ProfileAvatar";
+import { getPrimaryRole } from "@/components/auth/RoleName";
 import { useAuth } from "@/features/auth/useAuth";
 import { BookOpen, Star, MessageCircle, Trophy } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -91,6 +92,7 @@ export default function DashboardPage() {
 
   const displayName =
     profile?.display_name || profile?.username || "Reader";
+  const primaryRole = getPrimaryRole(roles);
   const level = stats?.level;
   const rank = stats?.rank;
 
@@ -100,7 +102,7 @@ export default function DashboardPage() {
       <main className="mx-auto max-w-5xl px-4 py-8 md:px-6 lg:px-10">
         {/* Header */}
         <div className="mb-8 flex items-center gap-4">
-          <ProfileAvatar userId={user.id} avatarPath={profile?.avatar_path} name={displayName} role={primaryRole} size={64} />
+          <ProfileAvatar userId={user.id} avatarPath={profile?.avatar_path} name={displayName} role={primaryRole} frameId={profile?.equipped_frame_id} size={64} />
           <div>
             <h1 className="font-heading text-2xl font-semibold tracking-tight">
               {displayName}
