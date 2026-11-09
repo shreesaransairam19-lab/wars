@@ -4,7 +4,14 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 
 interface SeriesFormProps {
-  onCreated?: () => void;
+  onCreated?: (series?: {
+    id: string;
+    title: string;
+    slug: string;
+    content_type: string;
+    status: string;
+    cover_path?: string | null;
+  }) => void;
 }
 
 export function SeriesForm({ onCreated }: SeriesFormProps) {
@@ -58,7 +65,7 @@ export function SeriesForm({ onCreated }: SeriesFormProps) {
       setSlug("");
       setSlugEdited(false);
       setDescription("");
-      onCreated?.();
+      onCreated?.(data.series);
     } catch {
       setError("Network error");
     } finally {

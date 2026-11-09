@@ -35,6 +35,7 @@ export default function AdminContentPage() {
   const [expandedSeries, setExpandedSeries] = useState<string | null>(null);
   const [chapters, setChapters] = useState<Record<string, Chapter[]>>({});
   const [loading, setLoading] = useState(true);
+  const [seriesError, setSeriesError] = useState("");
 
   const canManageChapters = roles.some((r) => ["owner", "editor"].includes(r));
 
@@ -42,9 +43,12 @@ export default function AdminContentPage() {
     try {
       const res = await fetch("/api/series?all=true");
       const data = await res.json();
-      setSeriesList(data.series ?? []);
+      if (!res.ok) throw new Error(data.error ?? "Could not load series");
+      if (!Array.isArray(data.series)) throw new Error("The server returned an invalid series list");
+      setSeriesList(data.series);
+      setSeriesError("");
     } catch {
-      // ignore
+      setSeriesError("The series list could not refresh. Reload this page to retry.");
     }
   }, []);
 
@@ -52,23 +56,15 @@ export default function AdminContentPage() {
     let cancelled = false;
     async function load() {
       if (user && canManageChapters) {
-        try {
-          const res = await fetch("/api/series?all=true");
-          const data = await res.json();
-          if (!cancelled) {
-            setSeriesList(data.series ?? []);
-            setLoading(false);
-          }
-        } catch {
-          if (!cancelled) setLoading(false);
-        }
+        await fetchSeries();
+        if (!cancelled) setLoading(false);
       }
     }
     load();
     return () => {
       cancelled = true;
     };
-  }, [user, canManageChapters]);
+  }, [user, canManageChapters, fetchSeries]);
 
   async function loadChapters(seriesId: string) {
     if (chapters[seriesId]) {
@@ -191,7 +187,16 @@ export default function AdminContentPage() {
 
         {/* Create series */}
         <div className="mt-6">
-          <SeriesForm onCreated={fetchSeries} />
+          <SeriesForm
+            onCreated={(created) => {
+              if (created) {
+                const newSeries: Series = { ...created, chapters: [{ count: 0 }] };
+                setSeriesList((current) => [newSeries, ...current.filter((item) => item.id !== newSeries.id)]);
+                setChapters((current) => ({ ...current, [newSeries.id]: [] }));
+              }
+              void fetchSeries();
+            }}
+          />
         </div>
 
         {/* Series list */}
@@ -199,6 +204,12 @@ export default function AdminContentPage() {
           <h2 className="mb-3 font-heading text-sm font-semibold">
             Existing Series ({seriesList.length})
           </h2>
+
+          {seriesError && (
+            <p role="alert" className="mb-3 rounded-lg border border-[#704044] bg-[#332329] px-3 py-2 text-xs text-[#ffb2b2]">
+              {seriesError}
+            </p>
+          )}
 
           {loading ? (
             <div className="space-y-2">
