@@ -1,43 +1,44 @@
 "use client";
 
 import Link from "next/link";
-import { Star, BookOpen, MessageCircle, Compass } from "lucide-react";
+import { Star, BookOpen, MessageCircle, Clapperboard } from "lucide-react";
 
 const cards = [
   {
-    number: "01 / DISCOVER",
-    icon: Star,
-    color: "lime" as const,
-    title: "Rating & Review",
-    description:
-      "Search added chapters, then rate and review the exact manga episode.",
-    href: "/library",
-  },
-  {
-    number: "02 / EXPLORE",
+    number: "01 / READ",
     icon: BookOpen,
     color: "purple" as const,
-    title: "Explore Manga",
+    title: "Manga Library",
     description:
-      "Search titles by genre, check reader ratings, and open chapter guides.",
+      "Browse manga and light novels, then open a title to read its chapters.",
+    href: "/manga",
+  },
+  {
+    number: "02 / WATCH",
+    icon: Clapperboard,
+    color: "lime" as const,
+    title: "Anime Library",
+    description:
+      "Explore anime series and movies, with their own ratings and reviews.",
+    href: "/anime",
+  },
+  {
+    number: "03 / DISCOVER",
+    icon: Star,
+    color: "gold" as const,
+    title: "Ratings & Reviews",
+    description:
+      "Compare reader ratings and share reviews for titles in either library.",
     href: "/library",
   },
   {
-    number: "03 / CONNECT",
+    number: "04 / CONNECT",
     icon: MessageCircle,
     color: "pink" as const,
     title: "Real-Time Chat",
     description:
-      "Join anime servers, share theories, and talk with fans in dedicated rooms.",
+      "Join community rooms, share theories, and talk with other fans.",
     href: "/chat",
-  },
-  {
-    number: "04 / RECOMMENDED",
-    icon: Compass,
-    color: "gold" as const,
-    title: "Recommended Manga",
-    description: "Find reader favorites ranked by episode star ratings.",
-    href: "/library",
   },
 ];
 
