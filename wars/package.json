@@ -10,7 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "db:migrate": "supabase db push",
+    "db:migrate": "npx supabase db push",
     "db:seed": "supabase db seed"
   },
   "dependencies": {
