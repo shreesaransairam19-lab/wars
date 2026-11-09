@@ -75,8 +75,40 @@ export async function GET(request: Request) {
     profiles: Array.isArray(message.profiles) ? message.profiles[0] ?? null : message.profiles,
     content: message.is_deleted ? "This message was removed." : message.content,
   }));
+
+  const senderIds = [...new Set(messages.map((message) => message.sender_id))];
+  const rolesByUser = new Map<string, string[]>();
+  if (senderIds.length > 0) {
+    const { data: roleRows } = await admin
+      .from("user_roles")
+      .select("user_id, roles(name)")
+      .in("user_id", senderIds);
+    const assignments = (roleRows ?? []) as {
+      user_id: string;
+      roles: { name: string } | { name: string }[] | null;
+    }[];
+    for (const assignment of assignments) {
+      const roleRowsForUser = Array.isArray(assignment.roles)
+        ? assignment.roles
+        : assignment.roles
+          ? [assignment.roles]
+          : [];
+      const current = rolesByUser.get(assignment.user_id) ?? [];
+      rolesByUser.set(assignment.user_id, [...current, ...roleRowsForUser.map((role) => role.name)]);
+    }
+  }
+  const rolePriority = ["owner", "admin", "editor", "moderator", "donator", "reader"];
+  const messagesWithRoles = messages.map((message) => {
+    const roles = rolesByUser.get(message.sender_id) ?? ["reader"];
+    const primaryRole = rolePriority.find((role) => roles.includes(role)) ?? "reader";
+    return {
+      ...message,
+      profiles: message.profiles ? { ...message.profiles, role: primaryRole } : null,
+    };
+  });
+
   return NextResponse.json(
-    { messages },
+    { messages: messagesWithRoles },
     { headers: { "Cache-Control": "private, no-store, max-age=0" } }
   );
 }

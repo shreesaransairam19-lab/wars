@@ -58,8 +58,8 @@ body {
 }
 
 @keyframes role-glitter-glow {
-  from { filter: brightness(0.96); }
-  to { filter: brightness(1.22); }
+  from { filter: brightness(0.96) drop-shadow(0 0 3px var(--name-glow, transparent)); }
+  to { filter: brightness(1.22) drop-shadow(0 0 8px var(--name-glow, transparent)); }
 }
 
 .role-badge-glitter {
@@ -101,9 +101,39 @@ body {
   );
 }
 
+.role-name-glitter {
+  color: transparent;
+  background-size: 240% 100%;
+  background-position: 100% 50%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: role-glitter-shift 3.2s linear infinite, role-glitter-glow 2s ease-in-out infinite alternate;
+}
+
+.role-name-glitter--owner {
+  background-image: linear-gradient(105deg, #a5f3fc 0%, #ffffff 24%, #22d3ee 42%, #ffffff 50%, #67e8f9 68%, #ffffff 78%, #a5f3fc 100%);
+}
+
+.role-name-glitter--donator {
+  background-image: linear-gradient(105deg, #fde68a 0%, #ffffff 24%, #f59e0b 42%, #ffffff 50%, #fbbf24 68%, #ffffff 78%, #fde68a 100%);
+}
+
+.role-name-glow {
+  text-shadow: 0 0 5px currentColor, 0 0 12px currentColor;
+}
+
+.role-name-glow.role-name-glitter--owner {
+  --name-glow: rgba(34, 211, 238, 0.85);
+}
+
+.role-name-glow.role-name-glitter--donator {
+  --name-glow: rgba(245, 158, 11, 0.9);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .role-badge-glitter,
-  .role-badge-glitter-text {
+  .role-badge-glitter-text,
+  .role-name-glitter {
     animation: none;
   }
 }
