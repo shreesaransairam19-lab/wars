@@ -24,12 +24,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: validation.error ?? "Chapter is required" }, { status: 400 });
   }
 
-  const { data: chapter } = await supabase.from("chapters").select("id").eq("id", chapterId).maybeSingle();
+  // Staff authorization above is the gate. Use the service client for this
+  // existence check so production RLS cannot hide a valid chapter from its
+  // owner/editor during a direct-to-Storage upload.
+  const admin = createAdminClient();
+  const { data: chapter } = await admin.from("chapters").select("id").eq("id", chapterId).maybeSingle();
   if (!chapter) return NextResponse.json({ error: "Chapter not found" }, { status: 404 });
 
   const extension = name.toLowerCase().endsWith(".pdf") ? "pdf" : "epub";
   const path = generateStoragePath(chapterId, extension);
-  const admin = createAdminClient();
   const { data, error } = await admin.storage.from("chapter-assets").createSignedUploadUrl(path);
   if (error || !data) {
     return NextResponse.json({ error: `Could not prepare upload: ${error?.message ?? "Storage unavailable"}` }, { status: 500 });
