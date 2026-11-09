@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { TopBar } from "@/components/layout/TopBar";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createSignedStorageUrl } from "@/lib/storage/signed-url";
 
 function Stars({ rating }: { rating: number }) {
@@ -26,13 +26,16 @@ interface LibrarySeries {
 }
 
 async function loadSeries(): Promise<LibrarySeries[]> {
-  const supabase = await createClient();
-  const { data } = await supabase
+  // Public library reads use the same server-side path as /api/series. The
+  // browser/RLS client can return no rows when the production public SELECT
+  // policy is absent, even though the content manager can see published data.
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
     .from("series")
     .select("id, title, slug, description, content_type, cover_path, ratings(rating)")
     .eq("status", "published")
     .order("created_at", { ascending: false });
-  if (!data) return [];
+  if (error || !data) return [];
   const chapterCounts = new Map<string, number>();
   if (data.length > 0) {
     const { data: chapterRows } = await supabase
