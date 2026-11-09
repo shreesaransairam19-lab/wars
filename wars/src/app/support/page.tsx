@@ -7,7 +7,6 @@ import Link from "next/link";
 import { TopBar } from "@/components/layout/TopBar";
 
 const UPI_ID = "fictrivosoftwarelimited@oksbi";
-const PAYEE_NAME = "Arun Ram R";
 
 export default function SupportPage() {
   const [amount, setAmount] = useState("100");
@@ -17,7 +16,6 @@ export default function SupportPage() {
   const upiLink = validAmount
     ? `upi://pay?${new URLSearchParams({
         pa: UPI_ID,
-        pn: PAYEE_NAME,
         am: parsedAmount.toFixed(2),
         cu: "INR",
         tn: "Support WARS",
@@ -104,7 +102,6 @@ export default function SupportPage() {
                   {copied ? "Copied" : "Copy"}
                 </button>
               </div>
-              <p className="mt-2 text-xs text-muted">Payee: {PAYEE_NAME}</p>
             </div>
           </div>
 
