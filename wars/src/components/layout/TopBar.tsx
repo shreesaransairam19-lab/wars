@@ -11,6 +11,7 @@ const navLinks = [
   { href: "/library", label: "Library" },
   { href: "/chat", label: "Chat" },
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/support", label: "Payment" },
 ];
 
 export function TopBar() {

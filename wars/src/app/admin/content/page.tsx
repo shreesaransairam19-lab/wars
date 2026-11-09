@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { TopBar } from "@/components/layout/TopBar";
 import { useAuth } from "@/features/auth/useAuth";
 import { SeriesForm } from "@/components/admin/SeriesForm";
@@ -167,15 +168,24 @@ export default function AdminContentPage() {
     <>
       <TopBar />
       <main className="mx-auto max-w-5xl px-4 py-8 md:px-6">
-        <span className="text-[11px] font-bold uppercase tracking-[1.5px] text-purple">
-          Admin
-        </span>
-        <h1 className="mt-1 font-heading text-2xl font-semibold tracking-tight">
-          Content Management
-        </h1>
-        <p className="mt-1 text-sm text-muted">
-          Manage series, chapters, and upload files.
-        </p>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-[1.5px] text-purple">
+              Admin
+            </span>
+            <h1 className="mt-1 font-heading text-2xl font-semibold tracking-tight">
+              Content Management
+            </h1>
+            <p className="mt-1 text-sm text-muted">
+              Manage series, chapters, and upload files.
+            </p>
+          </div>
+          {roles.includes("owner") && (
+            <Link href="/admin/roles" className="rounded-lg border border-line bg-panel px-3 py-2 text-sm text-muted hover:text-foreground">
+              Promote Members
+            </Link>
+          )}
+        </div>
 
         {/* Create series */}
         <div className="mt-6">
