@@ -120,7 +120,7 @@ export function ReviewSection({
         {reviews.map((review) => (
           <li key={review.id} className="rounded-lg border border-line bg-panel p-4">
             <div className="mb-1.5 flex items-center justify-between text-[11px] text-muted">
-              <span className="flex items-center gap-2 font-semibold text-foreground">
+              <div className="flex items-center gap-2 font-semibold text-foreground">
                 <ProfileAvatar
                   userId={review.profiles?.id}
                   avatarPath={review.profiles?.avatar_path}
@@ -128,7 +128,7 @@ export function ReviewSection({
                   size={28}
                 />
                 <span>{review.profiles?.username ?? "reader"}{review.chapters && ` · Ch. ${review.chapters.chapter_number}`}</span>
-              </span>
+              </div>
               <time dateTime={review.created_at}>
                 {new Date(review.created_at).toLocaleDateString()}
               </time>

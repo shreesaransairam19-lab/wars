@@ -152,6 +152,7 @@ export default function ProfilePage() {
               setError("");
               setMessage("");
               setSelectedFile(event.target.files?.[0] ?? null);
+              event.target.value = "";
             }}
           />
 
