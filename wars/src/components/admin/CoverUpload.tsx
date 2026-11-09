@@ -73,7 +73,7 @@ export function CoverUpload({
           }}
         />
       </label>
-      {message && <span role="status" className="max-w-56 truncate text-[10px] text-muted">{message}</span>}
+      {message && <span role="status" className="max-w-sm break-words text-[10px] text-muted">{message}</span>}
     </div>
   );
 }

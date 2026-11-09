@@ -35,6 +35,21 @@ export async function POST(request: Request) {
 
   const extension = name.toLowerCase().slice(name.lastIndexOf(".") + 1);
   const path = generateStoragePath(seriesId, extension);
+  const { data: buckets, error: bucketListError } = await admin.storage.listBuckets();
+  if (bucketListError) {
+    return NextResponse.json({ error: `Could not check cover storage: ${bucketListError.message}` }, { status: 500 });
+  }
+  if (!(buckets ?? []).some((bucket) => bucket.name === "covers" || bucket.id === "covers")) {
+    const { error: createBucketError } = await admin.storage.createBucket("covers", {
+      public: false,
+      fileSizeLimit: 5 * 1024 * 1024,
+      allowedMimeTypes: ["image/jpeg", "image/png", "image/webp", "image/gif"],
+    });
+    if (createBucketError && !/already exists|duplicate/i.test(createBucketError.message)) {
+      return NextResponse.json({ error: `Could not create cover storage: ${createBucketError.message}` }, { status: 500 });
+    }
+  }
+
   const { data, error } = await admin.storage.from("covers").createSignedUploadUrl(path);
   if (error || !data) {
     return NextResponse.json({ error: `Could not prepare cover upload: ${error?.message ?? "Storage unavailable"}` }, { status: 500 });
