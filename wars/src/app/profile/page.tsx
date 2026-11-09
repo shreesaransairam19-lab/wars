@@ -71,6 +71,7 @@ export default function ProfilePage() {
       if (!attachResponse.ok) throw new Error(attached.error ?? "Could not save the profile picture.");
 
       await refreshProfile();
+      window.dispatchEvent(new Event("wars:profile-updated"));
       setSelectedFile(null);
       if (fileInput.current) fileInput.current.value = "";
       setMessage("Profile picture updated.");
@@ -91,6 +92,7 @@ export default function ProfilePage() {
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error ?? "Could not remove the profile picture.");
       await refreshProfile();
+      window.dispatchEvent(new Event("wars:profile-updated"));
       setSelectedFile(null);
       if (fileInput.current) fileInput.current.value = "";
       setMessage("Profile picture removed.");

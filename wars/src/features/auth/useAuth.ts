@@ -96,9 +96,17 @@ export function useAuth(): UseAuthReturn {
       }
     });
 
+    const refreshProfileOnUpdate = () => {
+      void supabase.auth.getUser().then(async ({ data: { user: currentUser } }) => {
+        if (mounted && currentUser) await loadUser(currentUser);
+      });
+    };
+    window.addEventListener("wars:profile-updated", refreshProfileOnUpdate);
+
     return () => {
       mounted = false;
       subscription.unsubscribe();
+      window.removeEventListener("wars:profile-updated", refreshProfileOnUpdate);
     };
   }, [loadUser]);
 
