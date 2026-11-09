@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { Upload, Loader2 } from "lucide-react";
 import { validateImageFile, validateNovelFile } from "@/lib/security/file-validation";
+import { createClient } from "@/lib/supabase/client";
 
 interface UploadPanelProps {
   chapterId: string;
@@ -35,6 +36,46 @@ export function UploadPanel({ chapterId, assetType, onPageUploaded }: UploadPane
         }
 
         try {
+          if (assetType === "novel") {
+            const signedRes = await fetch("/api/upload/novel", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chapter_id: chapterId,
+                name: file.name,
+                type: file.type,
+                size: file.size,
+              }),
+            });
+            const signed = await signedRes.json();
+            if (!signedRes.ok) throw new Error(signed.error ?? "Could not start EPUB upload");
+
+            const { error: uploadError } = await createClient()
+              .storage.from(signed.bucket)
+              .uploadToSignedUrl(signed.path, signed.token, file, {
+                contentType: file.type || "application/epub+zip",
+                upsert: false,
+              });
+            if (uploadError) throw new Error(uploadError.message);
+
+            const completeRes = await fetch("/api/upload/novel", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chapter_id: chapterId,
+                path: signed.path,
+                name: file.name,
+                type: file.type,
+                size: file.size,
+              }),
+            });
+            const complete = await completeRes.json();
+            if (!completeRes.ok) throw new Error(complete.error ?? "Could not attach EPUB to chapter");
+            results.push(`✓ ${file.name}`);
+            setProgress([...results]);
+            continue;
+          }
+
           const formData = new FormData();
           formData.append("file", file);
           formData.append("chapter_id", chapterId);
@@ -54,8 +95,8 @@ export function UploadPanel({ chapterId, assetType, onPageUploaded }: UploadPane
           } else {
             results.push(`✗ ${file.name}: ${data.error}`);
           }
-        } catch {
-          results.push(`✗ ${file.name}: Network error`);
+        } catch (err) {
+          results.push(`✗ ${file.name}: ${err instanceof Error ? err.message : "Network error"}`);
         }
 
         setProgress([...results]);

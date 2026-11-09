@@ -23,7 +23,7 @@ interface Chapter {
   slug: string;
   chapter_number: number;
   status: string;
-  chapter_assets?: { count: number }[];
+  chapter_assets?: { id: string; asset_type: string; storage_path: string }[];
 }
 
 export default function AdminContentPage() {
@@ -33,7 +33,7 @@ export default function AdminContentPage() {
   const [chapters, setChapters] = useState<Record<string, Chapter[]>>({});
   const [loading, setLoading] = useState(true);
 
-  const isStaff = roles.some((r) => ["owner", "admin", "editor"].includes(r));
+  const canManageChapters = roles.some((r) => ["owner", "editor"].includes(r));
 
   const fetchSeries = useCallback(async () => {
     try {
@@ -48,7 +48,7 @@ export default function AdminContentPage() {
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      if (user && isStaff) {
+      if (user && canManageChapters) {
         try {
           const res = await fetch("/api/series?all=true");
           const data = await res.json();
@@ -65,7 +65,7 @@ export default function AdminContentPage() {
     return () => {
       cancelled = true;
     };
-  }, [user, isStaff]);
+  }, [user, canManageChapters]);
 
   async function loadChapters(seriesId: string) {
     if (chapters[seriesId]) {
@@ -80,6 +80,36 @@ export default function AdminContentPage() {
       setExpandedSeries(seriesId);
     } catch {
       // ignore
+    }
+  }
+
+  async function refreshChapters(seriesId: string) {
+    try {
+      const res = await fetch(`/api/chapters?series_id=${seriesId}`);
+      const data = await res.json();
+      setChapters((prev) => ({ ...prev, [seriesId]: data.chapters ?? [] }));
+    } catch {
+      // Keep the current list visible if refreshing fails.
+    }
+  }
+
+  async function removeAsset(chapterId: string, assetId: string) {
+    if (!confirm("Remove this file from the chapter?")) return;
+    const res = await fetch(`/api/chapters/${chapterId}/assets`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ asset_id: assetId }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      alert(data.error ?? "Could not remove file");
+      return;
+    }
+    for (const series of seriesList) {
+      if (chapters[series.id]?.some((chapter) => chapter.id === chapterId)) {
+        await refreshChapters(series.id);
+        break;
+      }
     }
   }
 
@@ -119,14 +149,14 @@ export default function AdminContentPage() {
     );
   }
 
-  if (!user || !isStaff) {
+  if (!user || !canManageChapters) {
     return (
       <>
         <TopBar />
         <main className="mx-auto max-w-md px-4 py-20 text-center">
           <h1 className="font-heading text-2xl font-semibold">Access Denied</h1>
           <p className="mt-2 text-sm text-muted">
-            You need editor or admin permissions to manage content.
+            Sign in with an Owner or Editor account to add or remove chapters.
           </p>
         </main>
       </>
@@ -225,8 +255,7 @@ export default function AdminContentPage() {
                             (chapters[series.id]?.length ?? 0) + 1
                           }
                           onCreated={() => {
-                            delete chapters[series.id];
-                            loadChapters(series.id);
+                            void refreshChapters(series.id);
                           }}
                         />
                       </div>
@@ -238,37 +267,60 @@ export default function AdminContentPage() {
                           {chapters[series.id]?.map((chapter) => (
                             <div
                               key={chapter.id}
-                              className="flex items-center justify-between rounded-lg bg-panel2 px-3 py-2"
+                              className="rounded-lg bg-panel2 px-3 py-2"
                             >
-                              <div>
-                                <p className="text-xs font-medium">
-                                  CH {chapter.chapter_number}: {chapter.title}
-                                </p>
-                                <p className="text-[9px] text-muted">
-                                  {chapter.chapter_assets?.[0]?.count ?? 0} assets
-                                </p>
+                              <div className="flex items-center justify-between gap-3">
+                                <div>
+                                  <p className="text-xs font-medium">
+                                    CH {chapter.chapter_number}: {chapter.title}
+                                  </p>
+                                  <p className="text-[9px] text-muted">
+                                    {chapter.chapter_assets?.length ?? 0} files
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {series.content_type === "light_novel" ? (
+                                    <UploadPanel
+                                      chapterId={chapter.id}
+                                      assetType="novel"
+                                      onPageUploaded={() => void refreshChapters(series.id)}
+                                    />
+                                  ) : (
+                                    <UploadPanel
+                                      chapterId={chapter.id}
+                                      assetType="page"
+                                      onPageUploaded={() => void refreshChapters(series.id)}
+                                    />
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => deleteChapter(chapter.id)}
+                                    className="rounded border border-[#704044] bg-[#332329] p-1 text-[#ffb2b2]"
+                                    aria-label={`Delete ${chapter.title}`}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-2">
-                                {series.content_type === "light_novel" ? (
-                                  <UploadPanel
-                                    chapterId={chapter.id}
-                                    assetType="novel"
-                                  />
-                                ) : (
-                                  <UploadPanel
-                                    chapterId={chapter.id}
-                                    assetType="page"
-                                  />
-                                )}
-                                <button
-                                  type="button"
-                                  onClick={() => deleteChapter(chapter.id)}
-                                  className="rounded border border-[#704044] bg-[#332329] p-1 text-[#ffb2b2]"
-                                  aria-label={`Delete ${chapter.title}`}
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </button>
-                              </div>
+                              {(chapter.chapter_assets ?? []).length > 0 && (
+                                <ul className="mt-2 space-y-1 border-t border-line pt-2">
+                                  {chapter.chapter_assets?.map((asset) => (
+                                    <li key={asset.id} className="flex items-center justify-between gap-2 text-[10px]">
+                                      <span className="truncate text-muted">
+                                        {asset.asset_type === "file" ? "EPUB" : "Page"} · {asset.storage_path.split("/").at(-1)}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => removeAsset(chapter.id, asset.id)}
+                                        className="rounded border border-[#704044] bg-[#332329] p-1 text-[#ffb2b2]"
+                                        aria-label={`Remove ${asset.storage_path.split("/").at(-1)}`}
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </button>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
                             </div>
                           ))}
                         </div>

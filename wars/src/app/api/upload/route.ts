@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { hasRole } from "@/lib/permissions/guards";
+import { hasAnyRole } from "@/lib/permissions/guards";
 import {
   validateImageFile,
   validateNovelFile,
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const canEdit = await hasRole(user.id, "editor");
+  const canEdit = await hasAnyRole(user.id, ["owner", "editor"]);
   if (!canEdit) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

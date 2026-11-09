@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { chapterSchema } from "@/lib/validation/series";
-import { hasRole } from "@/lib/permissions/guards";
+import { hasAnyRole } from "@/lib/permissions/guards";
 import { checkRateLimit, RATE_LIMITS, getClientIp } from "@/lib/security/rate-limit";
 
 // GET /api/chapters?series_id=xxx — list chapters for a series
 export async function GET(request: Request) {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const canManage = user ? await hasAnyRole(user.id, ["owner", "editor"]) : false;
   const url = new URL(request.url);
   const seriesId = url.searchParams.get("series_id");
 
@@ -14,11 +16,12 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "series_id required" }, { status: 400 });
   }
 
-  const { data, error } = await supabase
+  const query = supabase
     .from("chapters")
-    .select("*, chapter_assets(count)")
+    .select(canManage ? "*, chapter_assets(id, asset_type, storage_path)" : "*, chapter_assets(count)")
     .eq("series_id", seriesId)
     .order("chapter_number", { ascending: true });
+  const { data, error } = await query;
 
   if (error) {
     return NextResponse.json({ error: "Failed to fetch chapters" }, { status: 500 });
@@ -38,7 +41,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const canEdit = await hasRole(user.id, "editor");
+  const canEdit = await hasAnyRole(user.id, ["owner", "editor"]);
   if (!canEdit) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -86,7 +89,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const canEdit = await hasRole(user.id, "editor");
+  const canEdit = await hasAnyRole(user.id, ["owner", "editor"]);
   if (!canEdit) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -131,7 +134,7 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const canEdit = await hasRole(user.id, "editor");
+  const canEdit = await hasAnyRole(user.id, ["owner", "editor"]);
   if (!canEdit) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

@@ -44,6 +44,15 @@ export async function hasRole(
   return roles.some((role) => ROLE_HIERARCHY[role] >= minPriority);
 }
 
+// Exact role membership for features that should not inherit higher roles.
+export async function hasAnyRole(
+  userId: string,
+  allowedRoles: readonly RoleName[]
+): Promise<boolean> {
+  const roles = await getUserRoles(userId);
+  return roles.some((role) => allowedRoles.includes(role));
+}
+
 export async function getUserHighestRole(
   userId: string
 ): Promise<RoleName | null> {

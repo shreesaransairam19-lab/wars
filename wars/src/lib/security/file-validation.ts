@@ -59,7 +59,9 @@ export function validateNovelFile(file: {
     return { valid: false, error: `Invalid file extension: ${ext}` };
   }
 
-  if (!ALLOWED_NOVEL_TYPES.includes(file.type as (typeof ALLOWED_NOVEL_TYPES)[number])) {
+  // Browsers sometimes report EPUB as an empty MIME type. The .epub extension
+  // is still required above, so accept that case while rejecting other types.
+  if (file.type && !ALLOWED_NOVEL_TYPES.includes(file.type as (typeof ALLOWED_NOVEL_TYPES)[number])) {
     return { valid: false, error: `Invalid file type: ${file.type}` };
   }
 
