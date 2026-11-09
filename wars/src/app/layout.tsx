@@ -19,8 +19,8 @@ export const metadata: Metadata = {
   description:
     "Read manga and light novels, rate and review, and join anime communities.",
   icons: {
-    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
-    shortcut: "/favicon.svg",
+    icon: [{ url: "/wars-favicon-v2.svg", type: "image/svg+xml" }],
+    shortcut: "/wars-favicon-v2.svg",
   },
 };
 
