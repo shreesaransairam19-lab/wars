@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { TopBar } from "@/components/layout/TopBar";
 import { ChatView, type Room } from "@/components/chat/ChatView";
 import { hasAnyRole } from "@/lib/permissions/guards";
@@ -30,6 +31,56 @@ async function ChatContent() {
 
   if (!user) redirect("/login");
   const canManageCommunities = await hasAnyRole(user.id, ["owner", "admin"]);
+
+  // Keep a public General community available even if this database predates
+  // the migration that seeds default chat rooms.
+  const admin = createAdminClient();
+  let { data: generalCommunity } = await admin
+    .from("chat_rooms")
+    .select("id")
+    .eq("slug", "general-chat")
+    .eq("room_type", "server")
+    .maybeSingle();
+
+  if (!generalCommunity) {
+    const { data } = await admin
+      .from("chat_rooms")
+      .insert({ name: "General", slug: "general-chat", room_type: "server", visibility: "public" })
+      .select("id")
+      .maybeSingle();
+    generalCommunity = data;
+    if (!generalCommunity) {
+      const retry = await admin
+        .from("chat_rooms")
+        .select("id")
+        .eq("slug", "general-chat")
+        .eq("room_type", "server")
+        .maybeSingle();
+      generalCommunity = retry.data;
+    }
+  }
+
+  if (generalCommunity) {
+    const { data: generalRoom } = await admin
+      .from("chat_rooms")
+      .select("id")
+      .eq("slug", "general-chat-general")
+      .eq("room_type", "channel")
+      .maybeSingle();
+    if (!generalRoom) {
+      const { error } = await admin.from("chat_rooms").insert({
+        name: "general",
+        slug: "general-chat-general",
+        room_type: "channel",
+        visibility: "public",
+        parent_room_id: generalCommunity.id,
+      });
+      if (error) {
+        // Another simultaneous page request may have created the room already.
+        await admin.from("chat_rooms").select("id").eq("slug", "general-chat-general").maybeSingle();
+      }
+    }
+  }
 
   const { data: rooms } = await supabase
     .from("chat_rooms")

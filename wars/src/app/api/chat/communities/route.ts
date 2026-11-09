@@ -49,6 +49,10 @@ export async function DELETE(request: Request) {
   const parsed = z.object({ id: z.string().uuid(), room_type: z.enum(["server", "channel"]) }).safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Invalid room" }, { status: 400 });
   const admin = createAdminClient();
+  const { data: targetRoom } = await admin.from("chat_rooms").select("slug").eq("id", parsed.data.id).maybeSingle();
+  if (targetRoom?.slug === "general-chat" || targetRoom?.slug === "general-chat-general") {
+    return NextResponse.json({ error: "The default General chat cannot be removed" }, { status: 400 });
+  }
   const { error } = await admin.from("chat_rooms").delete().eq("id", parsed.data.id).eq("room_type", parsed.data.room_type);
   if (error) return NextResponse.json({ error: "Could not remove community or room" }, { status: 500 });
   return NextResponse.json({ success: true });
