@@ -12,7 +12,7 @@ type Member = {
   roles: string[];
 };
 
-const assignableRoles = ["reader", "moderator", "editor", "admin"] as const;
+const assignableRoles = ["reader", "moderator", "editor", "admin", "donator"] as const;
 type AssignableRole = (typeof assignableRoles)[number];
 
 export default function AdminRolesPage() {
@@ -105,7 +105,7 @@ export default function AdminRolesPage() {
         ) : (
           <>
             <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-panel p-4">
-              <p className="max-w-xl text-sm text-muted">Donator is reserved for the verified payment system and cannot be assigned manually.</p>
+              <p className="max-w-xl text-sm text-muted">Direct UPI payments cannot be verified automatically. Assign Donator only after checking the member’s cumulative payment confirmations reach $50 USD equivalent.</p>
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}

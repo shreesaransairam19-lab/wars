@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripe } from "@/lib/stripe";
 import type Stripe from "stripe";
 
-// POST /api/stripe/webhook — sync subscription state + donator role
+// POST /api/stripe/webhook — sync subscription state.
 export async function POST(request: Request) {
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!secret) {
@@ -62,25 +62,6 @@ export async function POST(request: Request) {
         { onConflict: "user_id" }
       );
 
-      const { data: donator } = await admin
-        .from("roles")
-        .select("id")
-        .eq("name", "donator")
-        .maybeSingle();
-
-      if (donator) {
-        if (active) {
-          await admin
-            .from("user_roles")
-            .upsert({ user_id: userId, role_id: donator.id }, { onConflict: "user_id,role_id" });
-        } else {
-          await admin
-            .from("user_roles")
-            .delete()
-            .eq("user_id", userId)
-            .eq("role_id", donator.id);
-        }
-      }
     }
   }
 

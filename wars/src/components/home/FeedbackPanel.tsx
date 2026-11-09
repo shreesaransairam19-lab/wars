@@ -31,6 +31,7 @@ export function FeedbackPanel() {
 
   return (
     <section
+      id="feedback"
       className="mb-14 rounded-[17px] border border-line bg-panel p-6"
       aria-labelledby="feedback-title"
     >
