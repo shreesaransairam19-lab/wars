@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { StarRating } from "./StarRating";
+import { ProfileAvatar } from "@/components/auth/ProfileAvatar";
 
 interface Review {
   id: string;
   content: string;
   created_at: string;
   status?: string;
-  profiles: { username: string; avatar_path: string | null } | null;
+  profiles: { id: string; username: string; avatar_path: string | null } | null;
   chapters: { chapter_number: number } | null;
 }
 
@@ -119,9 +120,14 @@ export function ReviewSection({
         {reviews.map((review) => (
           <li key={review.id} className="rounded-lg border border-line bg-panel p-4">
             <div className="mb-1.5 flex items-center justify-between text-[11px] text-muted">
-              <span className="font-semibold text-foreground">
-                {review.profiles?.username ?? "reader"}
-                {review.chapters && ` · Ch. ${review.chapters.chapter_number}`}
+              <span className="flex items-center gap-2 font-semibold text-foreground">
+                <ProfileAvatar
+                  userId={review.profiles?.id}
+                  avatarPath={review.profiles?.avatar_path}
+                  name={review.profiles?.username ?? "Reader"}
+                  size={28}
+                />
+                <span>{review.profiles?.username ?? "reader"}{review.chapters && ` · Ch. ${review.chapters.chapter_number}`}</span>
               </span>
               <time dateTime={review.created_at}>
                 {new Date(review.created_at).toLocaleDateString()}

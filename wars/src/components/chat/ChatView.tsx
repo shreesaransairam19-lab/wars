@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { RoleName } from "@/components/auth/RoleName";
+import { ProfileAvatar } from "@/components/auth/ProfileAvatar";
 import { Send, ImagePlay } from "lucide-react";
 
 export interface Room {
@@ -21,7 +22,7 @@ interface Message {
   message_type: string;
   created_at: string;
   sender_id: string;
-  profiles: { username: string; display_name?: string | null; role?: string | null } | null;
+  profiles: { username: string; display_name?: string | null; avatar_path?: string | null; role?: string | null } | null;
   message_reactions?: { reaction: string; user_id: string }[];
 }
 
@@ -481,7 +482,13 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
             );
             return (
               <div key={message.id} className="group">
-                <div className="flex items-baseline gap-2">
+                <div className="flex items-center gap-2">
+                  <ProfileAvatar
+                    userId={message.sender_id}
+                    avatarPath={message.profiles?.avatar_path}
+                    name={message.profiles?.display_name || message.profiles?.username || "Reader"}
+                    size={24}
+                  />
                   <RoleName role={message.profiles?.role} className="role-name-glow text-[12px] font-semibold">
                     {message.profiles?.display_name || message.profiles?.username || "reader"}
                   </RoleName>

@@ -19,6 +19,7 @@ interface UseAuthReturn {
   profile: Profile | null;
   roles: string[];
   loading: boolean;
+  refreshProfile: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -63,6 +64,10 @@ export function useAuth(): UseAuthReturn {
     router.refresh();
   }, [router]);
 
+  const refreshProfile = useCallback(async () => {
+    if (user) await loadUser(user);
+  }, [user, loadUser]);
+
   useEffect(() => {
     if (!isSupabaseConfigured()) return;
     const supabase = createClient();
@@ -97,5 +102,5 @@ export function useAuth(): UseAuthReturn {
     };
   }, [loadUser]);
 
-  return { user, profile, roles, loading, signOut };
+  return { user, profile, roles, loading, refreshProfile, signOut };
 }

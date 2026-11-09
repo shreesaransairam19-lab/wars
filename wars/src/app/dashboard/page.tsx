@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { TopBar } from "@/components/layout/TopBar";
 import { RoleBadge } from "@/components/auth/RoleBadge";
+import { ProfileAvatar } from "@/components/auth/ProfileAvatar";
 import { useAuth } from "@/features/auth/useAuth";
 import { BookOpen, Star, MessageCircle, Trophy } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -99,9 +100,7 @@ export default function DashboardPage() {
       <main className="mx-auto max-w-5xl px-4 py-8 md:px-6 lg:px-10">
         {/* Header */}
         <div className="mb-8 flex items-center gap-4">
-          <div className="grid h-16 w-16 place-items-center rounded-full bg-[#664d83] text-xl font-bold text-white">
-            {displayName.slice(0, 2).toUpperCase()}
-          </div>
+          <ProfileAvatar userId={user.id} avatarPath={profile?.avatar_path} name={displayName} size={64} />
           <div>
             <h1 className="font-heading text-2xl font-semibold tracking-tight">
               {displayName}

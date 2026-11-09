@@ -251,7 +251,7 @@ export async function POST(request: Request) {
     }
 
     const [{ data: profile }, role] = await Promise.all([
-      admin.from("profiles").select("username,display_name").eq("id", user.id).maybeSingle(),
+      admin.from("profiles").select("username,display_name,avatar_path").eq("id", user.id).maybeSingle(),
       getUserHighestRole(user.id),
     ]);
     const createdAt = new Date().toISOString();
@@ -267,6 +267,7 @@ export async function POST(request: Request) {
         profiles: profile ? {
           username: profile.username,
           display_name: profile.display_name,
+          avatar_path: profile.avatar_path,
           role: role ?? "reader",
         } : null,
         message_reactions: [],

@@ -22,7 +22,7 @@ export async function GET(request: Request) {
     .from("reviews")
     .select(
       `id, content, created_at, chapter_id,
-       profiles:user_id (username, avatar_path),
+       profiles:user_id (id, username, avatar_path),
        chapters (chapter_number)`
     )
     .eq("series_id", seriesId)

@@ -2,9 +2,10 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { User, LogOut, Shield } from "lucide-react";
+import { User, LogOut, Shield, Settings } from "lucide-react";
 import { useAuth } from "@/features/auth/useAuth";
 import { RoleBadge } from "@/components/auth/RoleBadge";
+import { ProfileAvatar } from "@/components/auth/ProfileAvatar";
 
 export function UserMenu() {
   const { user, profile, roles, loading, signOut } = useAuth();
@@ -40,7 +41,6 @@ export function UserMenu() {
 
   const displayName =
     profile?.display_name || profile?.username || user.email || "User";
-  const initials = displayName.slice(0, 2).toUpperCase();
   const isStaff = roles.some((r) =>
     ["owner", "admin", "editor", "moderator"].includes(r)
   );
@@ -55,9 +55,7 @@ export function UserMenu() {
         aria-expanded={open}
         aria-haspopup="true"
       >
-        <div className="grid h-7 w-7 place-items-center rounded-full bg-[#664d83] text-[10px] font-bold text-white">
-          {initials}
-        </div>
+        <ProfileAvatar userId={user.id} avatarPath={profile?.avatar_path} name={displayName} size={28} />
         <span className="hidden max-w-[100px] truncate text-xs font-semibold text-foreground md:block">
           {displayName}
         </span>
@@ -80,6 +78,15 @@ export function UserMenu() {
           </div>
 
           <div className="mt-1 flex flex-col">
+            <Link
+              href="/profile"
+              className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted transition-colors hover:bg-panel2 hover:text-foreground"
+              onClick={() => setOpen(false)}
+            >
+              <Settings className="h-4 w-4" />
+              Profile picture
+            </Link>
+
             <Link
               href="/dashboard"
               className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted transition-colors hover:bg-panel2 hover:text-foreground"
