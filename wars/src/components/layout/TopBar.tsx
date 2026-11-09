@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Bell, Menu, X } from "lucide-react";
 import { UserMenu } from "@/features/auth/UserMenu";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
@@ -22,20 +23,15 @@ export function TopBar() {
     <header className="sticky top-0 z-50 border-b border-line bg-background/90 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:h-[82px] md:px-6 lg:px-10">
         {/* Brand */}
-        <Link href="/" className="flex items-center gap-3" aria-label="WARS home">
-          <span
-            aria-hidden="true"
-            className="h-9 w-9 shrink-0 rounded-xl border border-line bg-black bg-cover bg-center shadow-[0_0_12px_rgba(155,140,255,0.22)] md:h-10 md:w-10"
-            style={{ backgroundImage: "url('/wars-logo.jpeg')" }}
+        <Link href="/" className="flex shrink-0 items-center" aria-label="WARS home">
+          <Image
+            src="/wars-wordmark.svg"
+            alt="WARS — World Anime Review System"
+            width={190}
+            height={51}
+            priority
+            className="h-10 w-[150px] object-contain object-left md:h-12 md:w-[178px]"
           />
-          <div className="flex flex-col gap-px">
-            <strong className="font-heading text-lg leading-none tracking-[0.12em] text-foreground md:text-xl">
-              WARS
-            </strong>
-            <small className="text-[8px] font-semibold uppercase tracking-wider text-muted md:text-[9px]">
-              World Anime Review System
-            </small>
-          </div>
         </Link>
 
         {/* Desktop nav */}

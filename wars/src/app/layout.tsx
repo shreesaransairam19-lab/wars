@@ -18,7 +18,10 @@ export const metadata: Metadata = {
   title: "WARS — World Anime Review System",
   description:
     "Read manga and light novels, rate and review, and join anime communities.",
-  icons: { icon: "/wars-logo.jpeg", shortcut: "/wars-logo.jpeg" },
+  icons: {
+    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+    shortcut: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
