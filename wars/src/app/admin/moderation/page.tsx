@@ -1,10 +1,28 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { TopBar } from "@/components/layout/TopBar";
 import { ModerationPanel } from "@/components/admin/ModerationPanel";
 import { createClient } from "@/lib/supabase/server";
 import { hasAnyRole } from "@/lib/permissions/guards";
 
-export default async function ModerationPage() {
+export default function ModerationPage() {
+  return (
+    <Suspense
+      fallback={
+        <>
+          <TopBar />
+          <div className="grid min-h-[calc(100vh-64px)] place-items-center text-sm text-muted">
+            Loading moderation tools...
+          </div>
+        </>
+      }
+    >
+      <ModerationContent />
+    </Suspense>
+  );
+}
+
+async function ModerationContent() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const canModerate = Boolean(user && await hasAnyRole(user.id, ["owner", "admin", "moderator"]));
