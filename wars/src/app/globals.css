@@ -291,6 +291,59 @@ body {
   to { opacity: 1; transform: scale(1.08) rotate(4deg); }
 }
 
+.profile-avatar-water__overlay,
+.profile-avatar-fire__overlay {
+  position: absolute;
+  z-index: 3;
+  inset: -10%;
+  width: 120%;
+  height: 120%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.profile-avatar-water__drop {
+  stroke: #ecfeff;
+  stroke-width: .9;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: wars-water-splash .85s ease-in-out infinite alternate;
+}
+
+.profile-avatar-water__drop--two { animation-delay: -.4s; }
+.profile-avatar-water__drop--three { animation-delay: -.62s; }
+.profile-avatar-water__drop--four { animation-delay: -.2s; }
+
+.profile-avatar-water__ripple {
+  transform-box: fill-box;
+  animation: wars-water-ripple 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes wars-water-splash {
+  from { opacity: .58; transform: translateY(2px) scale(.86); }
+  to { opacity: 1; transform: translateY(-2px) scale(1.08); }
+}
+
+@keyframes wars-water-ripple {
+  from { opacity: .55; transform: translateX(-2px) scaleX(.92); }
+  to { opacity: 1; transform: translateX(2px) scaleX(1.06); }
+}
+
+.profile-avatar-fire__flame {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: wars-fire-flicker .55s ease-in-out infinite alternate;
+}
+
+.profile-avatar-fire__flame--two { animation-delay: -.22s; }
+.profile-avatar-fire__flame--three { animation-delay: -.38s; }
+.profile-avatar-fire__flame--four { animation-delay: -.12s; }
+
+@keyframes wars-fire-flicker {
+  from { opacity: .64; transform: skewX(-5deg) scaleY(.9); }
+  to { opacity: 1; transform: skewX(5deg) scaleY(1.12); }
+}
+
 .profile-avatar-frame--water-splash::before {
   background: conic-gradient(from 0deg, #083344, #06b6d4, #cffafe, #0ea5e9, #14b8a6, #082f49, #083344);
   animation: wars-avatar-frame-spin 4.8s linear infinite;
@@ -365,7 +418,10 @@ body {
   .profile-avatar-frame--fire-blast::after,
   .profile-avatar-fang__top,
   .profile-avatar-fang__bottom,
-  .profile-avatar-thunder__bolt {
+  .profile-avatar-thunder__bolt,
+  .profile-avatar-water__drop,
+  .profile-avatar-water__ripple,
+  .profile-avatar-fire__flame {
     animation: none;
   }
 }

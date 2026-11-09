@@ -125,6 +125,56 @@ export function ProfileAvatar({
           </g>
         </svg>
       )}
+      {storeFrame?.id === "water-splash" && (
+        <svg className="profile-avatar-water__overlay" viewBox="0 0 100 100" aria-hidden="true">
+          <defs>
+            <linearGradient id={`${instanceId}-water-drop`} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stopColor="#ecfeff" />
+              <stop offset="0.5" stopColor="#67e8f9" />
+              <stop offset="1" stopColor="#0284c7" />
+            </linearGradient>
+            <filter id={`${instanceId}-water-glow`} x="-80%" y="-80%" width="260%" height="260%">
+              <feGaussianBlur stdDeviation="2" result="blur" />
+              <feFlood floodColor="#22d3ee" floodOpacity="0.85" />
+              <feComposite in2="blur" operator="in" />
+              <feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge>
+            </filter>
+          </defs>
+          <g fill={`url(#${instanceId}-water-drop)`} filter={`url(#${instanceId}-water-glow)`}>
+            <path className="profile-avatar-water__drop profile-avatar-water__drop--one" d="M15 8C13 16 6 20 7 27c1 7 10 8 14 3 4-6-3-13-6-22Z" />
+            <path className="profile-avatar-water__drop profile-avatar-water__drop--two" d="M86 65c-2 7-9 11-8 18 1 7 10 8 14 3 4-6-3-13-6-21Z" />
+            <path className="profile-avatar-water__drop profile-avatar-water__drop--three" d="M81 11c-1 4-5 7-4 11 1 4 6 5 9 1 2-4-3-8-5-12Z" />
+            <path className="profile-avatar-water__drop profile-avatar-water__drop--four" d="M19 77c-1 4-5 7-4 11 1 4 6 5 9 1 2-4-3-8-5-12Z" />
+          </g>
+          <g className="profile-avatar-water__ripple" fill="none" stroke="#cffafe" strokeLinecap="round" strokeWidth="2.4" filter={`url(#${instanceId}-water-glow)`}>
+            <path d="M5 43c6-5 12-5 18 0s12 5 18 0" />
+            <path d="M59 58c6-5 12-5 18 0s12 5 18 0" />
+          </g>
+        </svg>
+      )}
+      {storeFrame?.id === "fire-blast" && (
+        <svg className="profile-avatar-fire__overlay" viewBox="0 0 100 100" aria-hidden="true">
+          <defs>
+            <linearGradient id={`${instanceId}-fire-flame`} x1="0" y1="1" x2="0.8" y2="0">
+              <stop offset="0" stopColor="#ef4444" />
+              <stop offset="0.52" stopColor="#fb923c" />
+              <stop offset="1" stopColor="#fef08a" />
+            </linearGradient>
+            <filter id={`${instanceId}-fire-glow`} x="-80%" y="-80%" width="260%" height="260%">
+              <feGaussianBlur stdDeviation="2.2" result="blur" />
+              <feFlood floodColor="#f97316" floodOpacity="0.9" />
+              <feComposite in2="blur" operator="in" />
+              <feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge>
+            </filter>
+          </defs>
+          <g fill={`url(#${instanceId}-fire-flame)`} stroke="#fff7ae" strokeWidth="0.8" strokeLinejoin="round" filter={`url(#${instanceId}-fire-glow)`}>
+            <path className="profile-avatar-fire__flame profile-avatar-fire__flame--one" d="M17 39c-8-7-4-14-6-21 10 5 13 12 11 18 5-5 5-10 4-14 9 9 7 20-1 25-5 3-11-1-8-8Z" />
+            <path className="profile-avatar-fire__flame profile-avatar-fire__flame--two" d="M82 20c-7-8-2-14-3-20 10 6 13 14 10 21 5-5 5-10 4-14 9 10 6 21-2 25-6 3-12-3-9-12Z" />
+            <path className="profile-avatar-fire__flame profile-avatar-fire__flame--three" d="M77 80c-8-7-4-14-6-21 10 5 13 12 11 18 5-5 5-10 4-14 9 9 7 20-1 25-5 3-11-1-8-8Z" />
+            <path className="profile-avatar-fire__flame profile-avatar-fire__flame--four" d="M24 88c-7-7-3-13-4-19 9 5 12 11 9 18 5-4 5-9 4-13 8 9 6 19-2 23-5 3-10-2-7-9Z" />
+          </g>
+        </svg>
+      )}
     </div>
   );
 }
