@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getProfileFrame } from "@/lib/profile-frames/catalog";
+import { hasAnyRole } from "@/lib/permissions/guards";
 
 const UPI_ID = "fictrivosoftwarelimited@oksbi";
 
@@ -44,6 +45,7 @@ export async function POST(request: Request) {
   const frame = getProfileFrame(frameId);
   if (!frame) return NextResponse.json({ error: "That frame is not available in the store" }, { status: 400 });
 
+  const isOwner = await hasAnyRole(user.id, ["owner"]);
   const admin = createAdminClient();
   const [{ data: owned, error: ownedError }, { data: active, error: activeError }] = await Promise.all([
     admin.from("user_profile_frames").select("frame_id").eq("user_id", user.id).eq("frame_id", frame.id).maybeSingle(),
@@ -51,6 +53,33 @@ export async function POST(request: Request) {
   ]);
   if (ownedError || activeError) return NextResponse.json({ error: "Could not check your frame store account" }, { status: 500 });
   if (owned) return NextResponse.json({ error: "You already own this frame" }, { status: 409 });
+
+  if (isOwner) {
+    if (active && active.status !== "awaiting_payment") {
+      return NextResponse.json({ error: "A payment for this frame is already under review. Ask an Admin to resolve that order before claiming the free Owner frame." }, { status: 409 });
+    }
+    if (active) {
+      const { data: cancelledOrder, error: cancelError } = await admin.from("profile_frame_orders")
+        .update({ status: "cancelled" })
+        .eq("id", active.id).eq("user_id", user.id).eq("status", "awaiting_payment")
+        .select("id").maybeSingle();
+      if (cancelError) return NextResponse.json({ error: "Could not close the unpaid order. Refresh and try again." }, { status: 500 });
+      if (!cancelledOrder) return NextResponse.json({ error: "Your order changed. Refresh the store and try again." }, { status: 409 });
+    }
+
+    const { error: ownershipError } = await admin.from("user_profile_frames").insert({ user_id: user.id, frame_id: frame.id });
+    if (ownershipError && ownershipError.code !== "23505") {
+      console.error("Could not grant free Owner profile frame", ownershipError);
+      return NextResponse.json({ error: "Could not claim the free Owner frame" }, { status: 500 });
+    }
+    const { error: equipError } = await admin.from("profile_frame_equipped")
+      .upsert({ user_id: user.id, frame_id: frame.id, equipped_at: new Date().toISOString() }, { onConflict: "user_id" });
+    if (equipError) {
+      console.error("Could not equip free Owner profile frame", equipError);
+    }
+    return NextResponse.json({ success: true, freeClaim: true, equipped: !equipError, frameId: frame.id }, { status: 200, headers: { "Cache-Control": "private, no-store, max-age=0" } });
+  }
+
   if (active) return NextResponse.json({ error: "You already have an order for this frame", orderId: active.id, status: active.status }, { status: 409 });
 
   const { data: order, error } = await admin.from("profile_frame_orders").insert({

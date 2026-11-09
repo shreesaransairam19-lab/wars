@@ -41,6 +41,7 @@ export default function ProfileFramesPage() {
   const [paymentIntent, setPaymentIntent] = useState<PaymentIntent | null>(null);
   const [references, setReferences] = useState<Record<string, string>>({});
   const primaryRole = getPrimaryRole(roles);
+  const isOwner = roles.includes("owner");
   const isStaff = roles.some((role) => ["owner", "admin"].includes(role));
 
   const loadStore = useCallback(async () => {
@@ -73,6 +74,15 @@ export default function ProfileFramesPage() {
       if (!response.ok) {
         if (json.orderId) await loadStore();
         throw new Error(json.error ?? "Could not start this purchase");
+      }
+      if (json.freeClaim) {
+        setPaymentIntent(null);
+        setNotice(json.equipped === false
+          ? "Founder perk unlocked! Tap Equip frame to apply it to your profile."
+          : "Founder perk unlocked! Your free Owner frame is equipped across your WARS profile.");
+        window.dispatchEvent(new Event("wars:profile-updated"));
+        await loadStore();
+        return;
       }
       setPaymentIntent(json as PaymentIntent);
       await loadStore();
@@ -147,7 +157,7 @@ export default function ProfileFramesPage() {
     <main className="mx-auto max-w-6xl px-4 py-8 md:px-6">
       <Link href="/profile" className="mb-5 inline-flex items-center gap-2 text-sm text-muted hover:text-foreground"><ArrowLeft className="h-4 w-4" /> Profile</Link>
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div><p className="text-[11px] font-bold uppercase tracking-[1.5px] text-purple">WARS style shop</p><h1 className="mt-1 font-heading text-3xl font-semibold tracking-tight">Profile Frame Store</h1><p className="mt-2 max-w-2xl text-sm text-muted">Pay with UPI, then submit your transaction reference for manual verification. Every ₹100 earns enough XP for one level after approval.</p></div>
+        <div><p className="text-[11px] font-bold uppercase tracking-[1.5px] text-purple">WARS style shop</p><h1 className="mt-1 font-heading text-3xl font-semibold tracking-tight">Profile Frame Store</h1><p className="mt-2 max-w-2xl text-sm text-muted">Owners can claim frames free. Other members pay with UPI and submit the transaction reference for manual verification. Every ₹100 earns enough XP for one level after approval.</p></div>
         <div className="flex items-center gap-3 rounded-xl border border-line bg-panel px-4 py-3"><ProfileAvatar userId={user.id} avatarPath={profile?.avatar_path} name={displayName} role={primaryRole} frameId={data.equippedFrameId ?? profile?.equipped_frame_id} size={44} /><div><p className="text-xs font-semibold">Your profile</p><p className="text-[11px] text-muted">Preview updates everywhere</p></div></div>
       </div>
       {isStaff && <Link href="/admin/frames" className="mt-5 inline-flex rounded-lg border border-line bg-panel px-3 py-2 text-sm text-muted hover:text-foreground">Review frame payments</Link>}
@@ -160,10 +170,10 @@ export default function ProfileFramesPage() {
           const equipped = data.equippedFrameId === frame.id;
           const order = activeOrder(frame.id);
           return <article key={frame.id} className="flex flex-col rounded-2xl border border-line bg-panel p-5">
-            <div className="flex items-center gap-4"><ProfileAvatar name="WARS" role="reader" frameId={frame.id} size={64} /><div><h2 className="font-heading text-lg font-semibold">{frame.name}</h2><p className="text-sm font-bold text-accent">₹{frame.priceInr.toLocaleString("en-IN")}</p></div></div>
+            <div className="flex items-center gap-4"><ProfileAvatar name="WARS" role="reader" frameId={frame.id} size={64} /><div><h2 className="font-heading text-lg font-semibold">{frame.name}</h2><p className="text-sm font-bold text-accent">{isOwner ? "FREE · OWNER FOUNDER PERK" : `₹${frame.priceInr.toLocaleString("en-IN")}`}</p></div></div>
             <p className="mt-4 min-h-10 text-sm text-muted">{frame.description}</p>
-            <p className="mt-3 text-xs text-accent">+{getLevelsForPrice(frame.priceInr)} level&apos;s worth of XP after verification</p>
-            <div className="mt-5">{owned ? <button type="button" onClick={() => void equip(frame.id)} disabled={equipped || Boolean(busy)} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-line px-4 py-2.5 text-sm font-semibold disabled:opacity-60">{equipped ? <><Check className="h-4 w-4" /> Equipped</> : busy === frame.id ? "Saving…" : "Equip frame"}</button> : order?.status === "submitted" ? <p className="rounded-lg border border-line bg-background px-3 py-2.5 text-center text-sm text-muted">Payment submitted · awaiting review</p> : order?.status === "awaiting_payment" ? <button type="button" onClick={() => resumePayment(order)} className="w-full rounded-lg border border-accent/60 px-4 py-2.5 text-sm font-semibold text-accent">Continue payment</button> : <button type="button" onClick={() => void startPurchase(frame.id)} disabled={Boolean(busy)} className="w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-bold text-[#171a11] disabled:opacity-50">{busy === frame.id ? "Preparing…" : "Buy frame"}</button>}</div>
+            <p className="mt-3 text-xs text-accent">{isOwner ? "Founder perk · Free claims do not add purchase XP" : `+${getLevelsForPrice(frame.priceInr)} level's worth of XP after verification`}</p>
+            <div className="mt-5">{owned ? <button type="button" onClick={() => void equip(frame.id)} disabled={equipped || Boolean(busy)} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-line px-4 py-2.5 text-sm font-semibold disabled:opacity-60">{equipped ? <><Check className="h-4 w-4" /> Equipped</> : busy === frame.id ? "Saving…" : "Equip frame"}</button> : order?.status === "submitted" ? <p className="rounded-lg border border-line bg-background px-3 py-2.5 text-center text-sm text-muted">Payment submitted · awaiting review</p> : isOwner ? <button type="button" onClick={() => void startPurchase(frame.id)} disabled={Boolean(busy)} className="w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-bold text-[#171a11] disabled:opacity-50">{busy === frame.id ? "Unlocking…" : "Claim free Owner frame"}</button> : order?.status === "awaiting_payment" ? <button type="button" onClick={() => resumePayment(order)} className="w-full rounded-lg border border-accent/60 px-4 py-2.5 text-sm font-semibold text-accent">Continue payment</button> : <button type="button" onClick={() => void startPurchase(frame.id)} disabled={Boolean(busy)} className="w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-bold text-[#171a11] disabled:opacity-50">{busy === frame.id ? "Preparing…" : "Buy frame"}</button>}</div>
           </article>;
         })}
       </section>
