@@ -5,13 +5,8 @@ import { TopBar } from "@/components/layout/TopBar";
 import { ArrowLeft, Star, BookOpen } from "lucide-react";
 import { ReviewSection } from "@/components/series/ReviewSection";
 import { createClient } from "@/lib/supabase/server";
-import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { hasRole } from "@/lib/permissions/guards";
 import { createSignedStorageUrl } from "@/lib/storage/signed-url";
-
-export function generateStaticParams() {
-  return [{ slug: "death-note" }, { slug: "orv" }];
-}
 
 interface SeriesView {
   id: string;
@@ -22,38 +17,6 @@ interface SeriesView {
   cover_url: string | null;
   chapters: { id: string; title: string; slug: string; number: number }[];
 }
-
-// Placeholder used only when Supabase is not configured (local UI-only dev).
-const placeholder: Record<string, SeriesView> = {
-  "death-note": {
-    id: "placeholder-death-note",
-    title: "Death Note",
-    slug: "death-note",
-    description:
-      "A high school student finds a supernatural notebook that kills anyone whose name is written in it. A cat-and-mouse game of intellect and morality begins.",
-    content_type: "manga",
-    chapters: Array.from({ length: 12 }, (_, i) => ({
-      id: `dn-ch-${i + 1}`,
-      title: `Chapter ${i + 1}`,
-      slug: `chapter-${i + 1}`,
-      number: i + 1,
-    })),
-  },
-  orv: {
-    id: "placeholder-orv",
-    title: "Omniscient Reader's Viewpoint",
-    slug: "orv",
-    description:
-      "A man who read a web novel finds himself living through its apocalyptic storyline. Armed with knowledge of the plot, he must survive.",
-    content_type: "light_novel",
-    chapters: Array.from({ length: 8 }, (_, i) => ({
-      id: `orv-ch-${i + 1}`,
-      title: `Chapter ${i + 1}`,
-      slug: `chapter-${i + 1}`,
-      number: i + 1,
-    })),
-  },
-};
 
 export default function SeriesPage({
   params,
@@ -81,16 +44,21 @@ async function SeriesContent({ params }: { params: Promise<{ slug: string }> }) 
   let canModerate = false;
   let dbId: string | null = null;
 
-  if (isSupabaseConfigured()) {
-    const supabase = await createClient();
-    const { data } = await supabase
-      .from("series")
-      .select("*, chapters(id, title, slug, chapter_number, status)")
-      .eq("slug", slug)
-      .maybeSingle();
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("series")
+    .select("*")
+    .eq("slug", slug)
+    .maybeSingle();
 
-    if (data) {
+  if (data) {
       dbId = data.id;
+      const { data: chapterRows } = await supabase
+        .from("chapters")
+        .select("id, title, slug, chapter_number, status")
+        .eq("series_id", data.id)
+        .eq("status", "published")
+        .order("chapter_number", { ascending: true });
       series = {
         id: data.id,
         title: data.title,
@@ -98,10 +66,8 @@ async function SeriesContent({ params }: { params: Promise<{ slug: string }> }) 
         description: data.description ?? "",
         content_type: data.content_type,
         cover_url: await createSignedStorageUrl(data.cover_path),
-        chapters: (data.chapters ?? [])
-          .filter((c: { status: string }) => c.status === "published")
-          .sort((a: { chapter_number: number }, b: { chapter_number: number }) => a.chapter_number - b.chapter_number)
-          .map((c: { id: string; title: string | null; slug: string; chapter_number: number }) => ({
+        chapters: (chapterRows ?? [])
+          .map((c) => ({
             id: c.id,
             title: c.title ?? `Chapter ${c.chapter_number}`,
             slug: c.slug,
@@ -112,11 +78,9 @@ async function SeriesContent({ params }: { params: Promise<{ slug: string }> }) 
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (user) canModerate = await hasRole(user.id, "moderator");
-    }
+    if (user) canModerate = await hasRole(user.id, "moderator");
   }
 
-  if (!series) series = placeholder[slug] ?? null;
   if (!series) notFound();
 
   return (

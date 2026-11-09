@@ -29,10 +29,21 @@ async function loadSeries(): Promise<LibrarySeries[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("series")
-    .select("id, title, slug, description, content_type, cover_path, chapters(id), ratings(rating)")
+    .select("id, title, slug, description, content_type, cover_path, ratings(rating)")
     .eq("status", "published")
     .order("created_at", { ascending: false });
   if (!data) return [];
+  const chapterCounts = new Map<string, number>();
+  if (data.length > 0) {
+    const { data: chapterRows } = await supabase
+      .from("chapters")
+      .select("series_id")
+      .in("series_id", data.map((series) => series.id))
+      .eq("status", "published");
+    for (const chapter of chapterRows ?? []) {
+      chapterCounts.set(chapter.series_id, (chapterCounts.get(chapter.series_id) ?? 0) + 1);
+    }
+  }
   return Promise.all(data.map(async (s) => {
     const ratings = (s.ratings ?? []) as { rating: number }[];
     const avg = ratings.length
@@ -45,7 +56,7 @@ async function loadSeries(): Promise<LibrarySeries[]> {
       description: s.description ?? "",
       content_type: s.content_type,
       cover_url: await createSignedStorageUrl(s.cover_path),
-      chapter_count: (s.chapters ?? []).length,
+      chapter_count: chapterCounts.get(s.id) ?? 0,
       avg_rating: Math.round(avg * 10) / 10,
       rating_count: ratings.length,
     };

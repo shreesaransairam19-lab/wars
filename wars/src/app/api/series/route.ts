@@ -12,7 +12,7 @@ export async function GET(request: Request) {
 
   let query = supabase
     .from("series")
-    .select("*, chapters(count)")
+    .select("*")
     .order("created_at", { ascending: false });
 
   if (!all) {
@@ -29,7 +29,30 @@ export async function GET(request: Request) {
     );
   }
 
-  return NextResponse.json({ series: data });
+  const series = data ?? [];
+  const chapterCounts = new Map<string, number>();
+  if (series.length > 0) {
+    let chapterQuery = db.from("chapters").select("series_id").in("series_id", series.map((item) => item.id));
+    if (!all) chapterQuery = chapterQuery.eq("status", "published");
+    const { data: chapterRows, error: chaptersError } = await chapterQuery;
+    if (chaptersError) {
+      console.error("Series chapter counts query failed", { code: chaptersError.code, message: chaptersError.message });
+      return NextResponse.json(
+        { error: all ? `Failed to count chapters: ${chaptersError.message}` : "Failed to fetch series" },
+        { status: 500 }
+      );
+    }
+    for (const chapter of chapterRows ?? []) {
+      chapterCounts.set(chapter.series_id, (chapterCounts.get(chapter.series_id) ?? 0) + 1);
+    }
+  }
+
+  return NextResponse.json({
+    series: series.map((item) => ({
+      ...item,
+      chapters: [{ count: chapterCounts.get(item.id) ?? 0 }],
+    })),
+  });
 }
 
 // POST /api/series — create series (editor+)
