@@ -38,6 +38,7 @@ interface ReaderPageProps {
   prevChapter?: Chapter | null;
   nextChapter?: Chapter | null;
   initialPosition?: number;
+  initialCompleted?: boolean;
   initialCfi?: string;
   epubSignedUrl?: string | null;
   pdfSignedUrl?: string | null;
@@ -49,6 +50,7 @@ export function ReaderPage({
   prevChapter,
   nextChapter,
   initialPosition = 0,
+  initialCompleted = false,
   initialCfi,
   epubSignedUrl,
   pdfSignedUrl,
@@ -56,6 +58,33 @@ export function ReaderPage({
   const { user } = useAuth();
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
+  const [chapterCompleted, setChapterCompleted] = useState(initialCompleted);
+  const [completionSaving, setCompletionSaving] = useState(false);
+  const [completionError, setCompletionError] = useState("");
+
+  useEffect(() => {
+    setChapterCompleted(initialCompleted);
+    setCompletionError("");
+  }, [chapter.id, initialCompleted]);
+
+  const markChapterComplete = useCallback(async () => {
+    if (!user || chapterCompleted || completionSaving) return;
+    setCompletionSaving(true);
+    setCompletionError("");
+    try {
+      const response = await fetch("/api/progress", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chapter_id: chapter.id, position: 100, completed: true }),
+      });
+      if (!response.ok) throw new Error("Could not save chapter completion");
+      setChapterCompleted(true);
+    } catch {
+      setCompletionError("Could not save completion. Please try again.");
+    } finally {
+      setCompletionSaving(false);
+    }
+  }, [user, chapterCompleted, completionSaving, chapter.id]);
 
   // Fetch assets
   useEffect(() => {
@@ -109,6 +138,7 @@ export function ReaderPage({
         body: JSON.stringify({
           chapter_id: chapter.id,
           position: Math.round(pct * 100),
+          completed: pct >= 0.98,
         }),
       });
     },
@@ -174,7 +204,21 @@ export function ReaderPage({
           </div>
         ) : pdfSignedUrl ? (
           <div className="mx-auto flex min-h-[70vh] w-full max-w-5xl flex-col gap-2 p-3">
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
+              {user ? (
+                <button
+                  type="button"
+                  onClick={markChapterComplete}
+                  disabled={chapterCompleted || completionSaving}
+                  className="rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground disabled:cursor-default disabled:opacity-70"
+                >
+                  {chapterCompleted ? "Chapter completed ✓" : completionSaving ? "Saving…" : "Mark as read"}
+                </button>
+              ) : (
+                <Link href={`/login?next=${encodeURIComponent(`/read/${series.slug}/${chapter.slug}`)}`} className="rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground">
+                  Sign in to track reading
+                </Link>
+              )}
               <a
                 href={pdfSignedUrl}
                 target="_blank"
@@ -184,6 +228,7 @@ export function ReaderPage({
                 Open PDF in new tab
               </a>
             </div>
+            {completionError && <p className="text-right text-xs text-[#ffb2b2]">{completionError}</p>}
             <iframe
               src={pdfSignedUrl}
               title={`${series.title} chapter ${chapter.chapter_number} PDF`}

@@ -78,16 +78,57 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Invalid input" }, { status: 400 });
   }
 
-  const { error } = await supabase.from("reading_progress").upsert(
-    {
-      user_id: user.id,
-      chapter_id: parsed.data.chapter_id,
-      position: parsed.data.position,
-      completed: parsed.data.completed ?? false,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id,chapter_id" }
-  );
+  const updatedAt = new Date().toISOString();
+  let error: { code?: string } | null = null;
+
+  if (parsed.data.completed === true) {
+    const result = await supabase.from("reading_progress").upsert(
+      {
+        user_id: user.id,
+        chapter_id: parsed.data.chapter_id,
+        position: parsed.data.position,
+        completed: true,
+        updated_at: updatedAt,
+      },
+      { onConflict: "user_id,chapter_id" }
+    );
+    error = result.error;
+  } else {
+    // Update position without clearing a completion the reader has already
+    // earned by returning to or rereading the chapter.
+    const updated = await supabase
+      .from("reading_progress")
+      .update({ position: parsed.data.position, updated_at: updatedAt })
+      .eq("user_id", user.id)
+      .eq("chapter_id", parsed.data.chapter_id)
+      .select("chapter_id")
+      .maybeSingle();
+
+    if (updated.error) {
+      error = updated.error;
+    } else if (!updated.data) {
+      const inserted = await supabase.from("reading_progress").insert({
+        user_id: user.id,
+        chapter_id: parsed.data.chapter_id,
+        position: parsed.data.position,
+        completed: false,
+        updated_at: updatedAt,
+      });
+
+      // Another tab can create the row between our update and insert. In that
+      // case, retry as a position-only update to preserve completed=true.
+      if (inserted.error?.code === "23505") {
+        const retry = await supabase
+          .from("reading_progress")
+          .update({ position: parsed.data.position, updated_at: updatedAt })
+          .eq("user_id", user.id)
+          .eq("chapter_id", parsed.data.chapter_id);
+        error = retry.error;
+      } else {
+        error = inserted.error;
+      }
+    }
+  }
 
   if (error) {
     return NextResponse.json({ error: "Failed to save progress" }, { status: 500 });

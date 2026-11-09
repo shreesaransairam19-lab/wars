@@ -66,6 +66,7 @@ async function ChapterReader({ params }: { params: Promise<Params> }) {
   } = await supabase.auth.getUser();
 
   let initialPosition = 0;
+  let initialCompleted = false;
 
   if (user) {
     const { data: progress } = await supabase
@@ -78,6 +79,7 @@ async function ChapterReader({ params }: { params: Promise<Params> }) {
     if (progress && series.content_type === "manga") {
       initialPosition = Number(progress.position) || 0;
     }
+    initialCompleted = Boolean(progress?.completed);
   }
 
   let epubSignedUrl: string | null = null;
@@ -109,6 +111,7 @@ async function ChapterReader({ params }: { params: Promise<Params> }) {
       prevChapter={prevChapter}
       nextChapter={nextChapter}
       initialPosition={initialPosition}
+      initialCompleted={initialCompleted}
       epubSignedUrl={epubSignedUrl}
       pdfSignedUrl={pdfSignedUrl}
     />

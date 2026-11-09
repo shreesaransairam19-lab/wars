@@ -16,25 +16,41 @@ interface Stats {
   nextLevelXp: number;
   chaptersRead: number;
   reviewsPosted: number;
+  chatMessages: number;
 }
 
 export default function DashboardPage() {
   const { user, profile, roles, loading } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState(false);
+  const [statsAttempt, setStatsAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      const res = await fetch("/api/user/stats");
-      if (!res.ok) return;
-      const json = await res.json();
-      if (!cancelled) setStats(json);
+      setStats(null);
+      setStatsLoading(true);
+      setStatsError(false);
+      try {
+        const res = await fetch("/api/user/stats", { cache: "no-store" });
+        if (!res.ok) throw new Error("Stats request failed");
+        const json = (await res.json()) as Stats;
+        if (!cancelled) setStats(json);
+      } catch {
+        if (!cancelled) {
+          setStats(null);
+          setStatsError(true);
+        }
+      } finally {
+        if (!cancelled) setStatsLoading(false);
+      }
     }
     if (user) void load();
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, statsAttempt]);
 
   if (loading) {
     return (
@@ -74,11 +90,8 @@ export default function DashboardPage() {
 
   const displayName =
     profile?.display_name || profile?.username || "Reader";
-  const level = stats?.level ?? 1;
-  const rank = stats?.rank ?? "Rookie";
-  const progress = stats?.progress ?? 0;
-  const currentLevelXp = stats?.currentLevelXp ?? 0;
-  const nextLevelXp = stats?.nextLevelXp ?? 100;
+  const level = stats?.level;
+  const rank = stats?.rank;
 
   return (
     <>
@@ -102,15 +115,28 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {statsError && (
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#704044] bg-[#332329] px-4 py-3 text-sm text-[#ffb2b2]">
+            <span>Your dashboard stats could not be loaded. No totals are being shown as zero.</span>
+            <button
+              type="button"
+              onClick={() => setStatsAttempt((attempt) => attempt + 1)}
+              className="rounded-lg border border-[#a65b64] px-3 py-1.5 font-semibold hover:bg-[#4a2d33]"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         {/* XP / Level card */}
         <div className="mb-6 rounded-[17px] border border-line bg-panel p-6">
           <div className="flex items-center justify-between">
             <div>
               <span className="text-[10px] font-bold uppercase tracking-[1.5px] text-accent">
-                Level {level}
+                {level !== undefined ? `Level ${level}` : statsLoading ? "Loading stats…" : "Stats unavailable"}
               </span>
               <h2 className="mt-1 font-heading text-xl font-semibold">
-                {rank}
+                {rank ?? "—"}
               </h2>
             </div>
             <Trophy className="h-8 w-8 text-gold" />
@@ -118,12 +144,17 @@ export default function DashboardPage() {
           <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-[#38383f]">
             <div
               className="h-full rounded-full bg-accent transition-all"
-              style={{ width: `${Math.max(0, Math.min(1, progress)) * 100}%` }}
+              style={{ width: `${Math.max(0, Math.min(1, stats?.progress ?? 0)) * 100}%` }}
             />
           </div>
           <p className="mt-2 text-[11px] text-muted">
-            {currentLevelXp} / {nextLevelXp} XP to next level
-            {stats?.totalXp !== undefined && ` · ${stats.totalXp} total XP`}
+            {stats
+              ? stats.level >= 100
+                ? `Level cap reached · ${stats.totalXp} total XP`
+                : `${stats.currentLevelXp} / ${stats.nextLevelXp} XP to next level · ${stats.totalXp} total XP`
+              : statsLoading
+                ? "Loading reading and activity totals…"
+                : "Stats are currently unavailable."}
           </p>
         </div>
 
@@ -133,25 +164,25 @@ export default function DashboardPage() {
             {
               icon: BookOpen,
               label: "Chapters Read",
-              value: String(stats?.chaptersRead ?? 0),
+              value: stats ? String(stats.chaptersRead) : statsLoading ? "…" : "—",
               href: "/library",
             },
             {
               icon: Star,
               label: "Reviews Posted",
-              value: String(stats?.reviewsPosted ?? 0),
-              href: "/series/death-note",
+              value: stats ? String(stats.reviewsPosted) : statsLoading ? "…" : "—",
+              href: "/library",
             },
             {
               icon: MessageCircle,
-              label: "Chat",
-              value: "—",
+              label: "Room Messages",
+              value: stats ? String(stats.chatMessages) : statsLoading ? "…" : "—",
               href: "/chat",
             },
             {
               icon: Trophy,
               label: "Total XP",
-              value: String(stats?.totalXp ?? 0),
+              value: stats ? String(stats.totalXp) : statsLoading ? "…" : "—",
               href: "/dashboard",
             },
           ].map((stat) => {
@@ -174,7 +205,7 @@ export default function DashboardPage() {
           })}
         </div>
 
-{/* Bio */}
+        {/* Bio */}
         {profile?.bio && (
           <div className="mt-6 rounded-[14px] border border-line bg-panel p-5">
             <h3 className="font-heading text-sm font-semibold">About</h3>
