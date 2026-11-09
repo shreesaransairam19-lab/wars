@@ -34,7 +34,53 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Failed to fetch reviews" }, { status: 500 });
   }
 
-  return NextResponse.json({ reviews: data });
+  type ReviewProfile = { id: string; username: string; avatar_path: string | null };
+  const reviews = (data ?? []) as unknown as {
+    id: string;
+    profiles: ReviewProfile | ReviewProfile[] | null;
+    [key: string]: unknown;
+  }[];
+  const profileFor = (row: (typeof reviews)[number]) =>
+    Array.isArray(row.profiles) ? row.profiles[0] ?? null : row.profiles;
+  const userIds = [...new Set(reviews.map((row) => profileFor(row)?.id).filter((id): id is string => Boolean(id)))];
+  const rolesByUser = new Map<string, string>();
+
+  if (userIds.length > 0) {
+    const { data: roleRows, error: rolesError } = await createAdminClient()
+      .from("user_roles")
+      .select("user_id, roles(name)")
+      .in("user_id", userIds);
+    if (rolesError) {
+      console.error("Could not load reviewer roles", rolesError);
+    } else {
+      const rolePriority = ["owner", "admin", "editor", "moderator", "donator", "reader"];
+      const assignments = (roleRows ?? []) as {
+        user_id: string;
+        roles: { name: string } | { name: string }[] | null;
+      }[];
+      for (const assignment of assignments ?? []) {
+        const joinedRoles = assignment.roles;
+        const assigned = (Array.isArray(joinedRoles) ? joinedRoles : joinedRoles ? [joinedRoles] : [])
+          .map((role) => role.name.trim().toLowerCase());
+        rolesByUser.set(
+          assignment.user_id,
+          rolePriority.find((role) => assigned.includes(role)) ?? assigned[0] ?? "reader"
+        );
+      }
+    }
+  }
+
+  const reviewsWithRoles = reviews.map((row) => {
+    const profile = profileFor(row);
+    return {
+      ...row,
+      profiles: profile
+        ? { ...profile, role: rolesByUser.get(profile.id) ?? "reader" }
+        : null,
+    };
+  });
+
+  return NextResponse.json({ reviews: reviewsWithRoles });
 }
 
 // POST /api/reviews — submit (pending moderation)

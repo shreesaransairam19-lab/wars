@@ -487,6 +487,7 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
                     userId={message.sender_id}
                     avatarPath={message.profiles?.avatar_path}
                     name={message.profiles?.display_name || message.profiles?.username || "Reader"}
+                    role={message.profiles?.role}
                     size={24}
                   />
                   <RoleName role={message.profiles?.role} className="role-name-glow text-[12px] font-semibold">

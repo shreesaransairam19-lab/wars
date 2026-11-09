@@ -130,10 +130,101 @@ body {
   --name-glow: rgba(245, 158, 11, 0.9);
 }
 
+@keyframes wars-avatar-frame-spin {
+  to { transform: rotate(1turn); }
+}
+
+@keyframes wars-avatar-frame-glow {
+  from { opacity: 0.35; filter: blur(4px); }
+  to { opacity: 0.9; filter: blur(8px); }
+}
+
+.profile-avatar-frame {
+  isolation: isolate;
+}
+
+.profile-avatar-frame__portrait {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  overflow: hidden;
+  border-radius: inherit;
+  background: #664d83;
+}
+
+.profile-avatar-frame--owner,
+.profile-avatar-frame--donator {
+  padding: 2px;
+}
+
+.profile-avatar-frame--owner::before,
+.profile-avatar-frame--donator::before,
+.profile-avatar-frame--owner::after,
+.profile-avatar-frame--donator::after {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  content: "";
+  pointer-events: none;
+}
+
+.profile-avatar-frame--owner::before {
+  z-index: 0;
+  background: conic-gradient(
+    from 0deg,
+    #155e75 0%,
+    #22d3ee 17%,
+    #ffffff 21%,
+    #67e8f9 27%,
+    #164e63 49%,
+    #a5f3fc 66%,
+    #ffffff 70%,
+    #22d3ee 77%,
+    #155e75 100%
+  );
+  animation: wars-avatar-frame-spin 3.2s linear infinite;
+}
+
+.profile-avatar-frame--donator::before {
+  z-index: 0;
+  background: conic-gradient(
+    from 0deg,
+    #92400e 0%,
+    #f59e0b 17%,
+    #ffffff 21%,
+    #fcd34d 27%,
+    #78350f 49%,
+    #fde68a 66%,
+    #ffffff 70%,
+    #fbbf24 77%,
+    #92400e 100%
+  );
+  animation: wars-avatar-frame-spin 3.2s linear infinite;
+}
+
+.profile-avatar-frame--owner::after {
+  z-index: -1;
+  background: conic-gradient(#22d3ee, #ffffff, #0891b2, #a5f3fc, #22d3ee);
+  animation: wars-avatar-frame-spin 3.2s linear infinite, wars-avatar-frame-glow 1.5s ease-in-out infinite alternate;
+}
+
+.profile-avatar-frame--donator::after {
+  z-index: -1;
+  background: conic-gradient(#f59e0b, #ffffff, #d97706, #fde68a, #f59e0b);
+  animation: wars-avatar-frame-spin 3.2s linear infinite, wars-avatar-frame-glow 1.5s ease-in-out infinite alternate;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .role-badge-glitter,
   .role-badge-glitter-text,
-  .role-name-glitter {
+  .role-name-glitter,
+  .profile-avatar-frame--owner::before,
+  .profile-avatar-frame--donator::before,
+  .profile-avatar-frame--owner::after,
+  .profile-avatar-frame--donator::after {
     animation: none;
   }
 }

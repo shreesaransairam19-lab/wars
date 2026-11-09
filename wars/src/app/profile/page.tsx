@@ -5,13 +5,14 @@ import Link from "next/link";
 import { ArrowLeft, ImagePlus, Trash2, Upload } from "lucide-react";
 import { TopBar } from "@/components/layout/TopBar";
 import { ProfileAvatar } from "@/components/auth/ProfileAvatar";
+import { getPrimaryRole } from "@/components/auth/RoleName";
 import { useAuth } from "@/features/auth/useAuth";
 import { createClient } from "@/lib/supabase/client";
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 
 export default function ProfilePage() {
-  const { user, profile, loading, refreshProfile } = useAuth();
+  const { user, profile, roles, loading, refreshProfile } = useAuth();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
   const [busy, setBusy] = useState(false);
@@ -120,7 +121,7 @@ export default function ProfilePage() {
   }
 
   const displayName = profile?.display_name || profile?.username || "Reader";
-  const avatarPath = previewUrl ? null : profile?.avatar_path;
+  const primaryRole = getPrimaryRole(roles);
 
   return (
     <>
@@ -132,12 +133,15 @@ export default function ProfilePage() {
 
         <section className="rounded-2xl border border-line bg-panel p-6 md:p-8">
           <div className="flex flex-wrap items-center gap-5">
-            {previewUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={previewUrl} alt="Selected profile picture preview" className="h-24 w-24 rounded-full border border-line object-cover" />
-            ) : (
-              <ProfileAvatar userId={user.id} avatarPath={avatarPath} name={displayName} size={96} className="border border-line" />
-            )}
+            <ProfileAvatar
+              userId={user.id}
+              avatarPath={profile?.avatar_path}
+              previewSrc={previewUrl || null}
+              name={displayName}
+              role={primaryRole}
+              size={96}
+              className="border border-line"
+            />
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-accent">Profile</p>
               <h1 className="mt-1 font-heading text-2xl font-semibold">Profile picture</h1>

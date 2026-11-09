@@ -55,7 +55,7 @@ export function UserMenu() {
         aria-expanded={open}
         aria-haspopup="true"
       >
-        <ProfileAvatar userId={user.id} avatarPath={profile?.avatar_path} name={displayName} size={28} />
+        <ProfileAvatar userId={user.id} avatarPath={profile?.avatar_path} name={displayName} role={primaryRole} size={28} />
         <span className="hidden max-w-[100px] truncate text-xs font-semibold text-foreground md:block">
           {displayName}
         </span>
