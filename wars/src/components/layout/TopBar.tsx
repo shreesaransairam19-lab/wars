@@ -23,15 +23,24 @@ export function TopBar() {
     <header className="sticky top-0 z-50 border-b border-line bg-background/90 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:h-[82px] md:px-6 lg:px-10">
         {/* Brand */}
-        <Link href="/" className="flex shrink-0 items-center" aria-label="WARS home">
+        <Link href="/" className="flex shrink-0 items-center gap-3" aria-label="WARS home">
           <Image
-            src="/wars-wordmark.svg"
-            alt="WARS — World Anime Review System"
-            width={190}
-            height={51}
+            src="/wars-reader-icon-v2.jpeg"
+            alt=""
+            width={44}
+            height={44}
             priority
-            className="h-10 w-[150px] object-contain object-left md:h-12 md:w-[178px]"
+            aria-hidden="true"
+            className="h-10 w-10 shrink-0 rounded-xl border border-line bg-black object-cover shadow-[0_0_12px_rgba(155,140,255,0.22)] md:h-11 md:w-11"
           />
+          <span className="flex flex-col gap-px">
+            <strong className="font-heading text-lg leading-none tracking-[0.12em] text-foreground md:text-xl">
+              WARS
+            </strong>
+            <small className="text-[8px] font-semibold uppercase tracking-wider text-muted md:text-[9px]">
+              World Anime Review System
+            </small>
+          </span>
         </Link>
 
         {/* Desktop nav */}
