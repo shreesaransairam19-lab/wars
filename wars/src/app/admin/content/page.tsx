@@ -39,6 +39,7 @@ export default function AdminContentPage() {
   const [seriesError, setSeriesError] = useState("");
 
   const canManageChapters = roles.some((r) => ["owner", "editor"].includes(r));
+  const canDeleteSeries = roles.some((r) => ["owner", "admin"].includes(r));
 
   const fetchSeries = useCallback(async () => {
     try {
@@ -114,11 +115,21 @@ export default function AdminContentPage() {
   }
 
   async function deleteSeries(id: string) {
-    if (!confirm("Delete this series and all its chapters?")) return;
+    if (!confirm("Permanently delete this series, its chapters and uploaded files, and its reviews and ratings?")) return;
     const res = await fetch(`/api/series?id=${id}`, { method: "DELETE" });
-    if (res.ok) {
-      fetchSeries();
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      alert(data.error ?? "Could not delete series");
+      return;
     }
+    setSeriesList((current) => current.filter((series) => series.id !== id));
+    setChapters((current) => {
+      const next = { ...current };
+      delete next[id];
+      return next;
+    });
+    if (expandedSeries === id) setExpandedSeries(null);
+    if (data.warning) alert(data.warning);
   }
 
   async function deleteChapter(id: string) {
@@ -247,7 +258,13 @@ export default function AdminContentPage() {
                           {series.title}
                         </p>
                         <p className="text-[10px] text-muted">
-                          {series.content_type === "manga" ? "Manga" : "Light Novel"}
+                          {series.content_type === "manga"
+                            ? "Manga"
+                            : series.content_type === "light_novel"
+                              ? "Light Novel"
+                              : series.content_type === "anime_movie"
+                                ? "Anime Movie"
+                                : "Anime Series"}
                           {" · "}
                           {series.chapters?.[0]?.count ?? 0} chapters
                           {" · "}
@@ -264,14 +281,16 @@ export default function AdminContentPage() {
                       </div>
                     </button>
 
-                    <button
-                      type="button"
-                      onClick={() => deleteSeries(series.id)}
-                      className="rounded-lg border border-[#704044] bg-[#332329] p-1.5 text-[#ffb2b2] transition-colors hover:bg-[#432a2d]"
-                      aria-label={`Delete ${series.title}`}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                    {canDeleteSeries && (
+                      <button
+                        type="button"
+                        onClick={() => deleteSeries(series.id)}
+                        className="rounded-lg border border-[#704044] bg-[#332329] p-1.5 text-[#ffb2b2] transition-colors hover:bg-[#432a2d]"
+                        aria-label={`Delete ${series.title}`}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                   </div>
 
                   {/* Expanded: chapters + add form */}

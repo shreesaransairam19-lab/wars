@@ -204,10 +204,76 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "Series ID required" }, { status: 400 });
   }
 
+  const admin = createAdminClient();
+  const { data: series, error: seriesError } = await admin
+    .from("series")
+    .select("id, cover_path")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (seriesError) {
+    console.error("Series delete lookup failed", { code: seriesError.code, message: seriesError.message });
+    return NextResponse.json({ error: "Could not load the series to delete" }, { status: 500 });
+  }
+  if (!series) return NextResponse.json({ error: "Series not found" }, { status: 404 });
+
+  const { data: chapterRows, error: chapterError } = await admin
+    .from("chapters")
+    .select("id")
+    .eq("series_id", id);
+  if (chapterError) {
+    console.error("Series chapter cleanup lookup failed", { code: chapterError.code, message: chapterError.message });
+    return NextResponse.json({ error: "Could not inspect the series chapters" }, { status: 500 });
+  }
+
+  const chapterIds = (chapterRows ?? []).map((chapter) => chapter.id);
+  let assetPaths: string[] = [];
+  if (chapterIds.length > 0) {
+    const { data: assets, error: assetError } = await admin
+      .from("chapter_assets")
+      .select("storage_path")
+      .in("chapter_id", chapterIds);
+    if (assetError) {
+      console.error("Series asset cleanup lookup failed", { code: assetError.code, message: assetError.message });
+      return NextResponse.json({ error: "Could not inspect the series files" }, { status: 500 });
+    }
+    assetPaths = (assets ?? [])
+      .map((asset) => asset.storage_path)
+      .filter((path): path is string => typeof path === "string" && path.length > 0);
+  }
+
+  // Let the authenticated owner/admin perform the database delete so the
+  // existing RLS delete policy still independently validates their role.
   const { error } = await supabase.from("series").delete().eq("id", id);
 
   if (error) {
+    console.error("Series delete failed", { code: error.code, message: error.message });
     return NextResponse.json({ error: "Failed to delete series" }, { status: 500 });
+  }
+
+  const cleanupFailures: string[] = [];
+  if (assetPaths.length > 0) {
+    for (let start = 0; start < assetPaths.length; start += 100) {
+      const { error: storageError } = await admin.storage
+        .from("chapter-assets")
+        .remove(assetPaths.slice(start, start + 100));
+      if (storageError) cleanupFailures.push(storageError.message);
+    }
+  }
+  if (series.cover_path) {
+    const coverObjectPath = series.cover_path.startsWith("covers/")
+      ? series.cover_path.slice("covers/".length)
+      : series.cover_path;
+    const { error: coverError } = await admin.storage.from("covers").remove([coverObjectPath]);
+    if (coverError) cleanupFailures.push(coverError.message);
+  }
+
+  if (cleanupFailures.length > 0) {
+    console.error("Series deleted but some files could not be removed", cleanupFailures);
+    return NextResponse.json({
+      success: true,
+      warning: "The series was deleted, but some stored files could not be cleaned up.",
+    });
   }
 
   return NextResponse.json({ success: true });
