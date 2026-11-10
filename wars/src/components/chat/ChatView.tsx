@@ -194,7 +194,7 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
       )
       .subscribe();
     // Polling is the fallback when Supabase Realtime is disabled or disconnected.
-    const refreshTimer = window.setInterval(() => void load(), 2500);
+    const refreshTimer = window.setInterval(() => void load(), 500);
     const refreshWhenVisible = () => { if (document.visibilityState === "visible") void load(); };
     document.addEventListener("visibilitychange", refreshWhenVisible);
 
