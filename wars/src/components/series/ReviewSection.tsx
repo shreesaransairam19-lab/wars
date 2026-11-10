@@ -58,6 +58,17 @@ export function ReviewSection({
       }
       setContent("");
       setMessage("Review submitted — awaiting moderation.");
+      setReviews((current) => [
+        {
+          id: json.id,
+          content,
+          created_at: new Date().toISOString(),
+          status: "pending",
+          profiles: null,
+          chapters: null,
+        },
+        ...current.filter((review) => review.id !== json.id),
+      ]);
       const refresh = await fetch(`/api/reviews?series_id=${seriesId}`);
       if (refresh.ok) {
         const refreshed = await refresh.json();

@@ -7,6 +7,7 @@ import { checkRateLimit, getClientIp, RATE_LIMITS } from "@/lib/security/rate-li
 import { hasRole } from "@/lib/permissions/guards";
 import { XP_REWARDS } from "@/lib/xp/calculate";
 import { z } from "zod";
+import { randomUUID } from "node:crypto";
 
 // GET /api/reviews?series_id=xxx — approved reviews plus the signed-in user's pending reviews
 export async function GET(request: Request) {
@@ -134,20 +135,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Review rejected" }, { status: 400 });
   }
 
-  const { data: review, error } = await supabase
+  const reviewId = randomUUID();
+  const { error } = await supabase
     .from("reviews")
     .insert({
+      id: reviewId,
       user_id: user.id,
       series_id: parsed.data.series_id,
       chapter_id: parsed.data.chapter_id ?? null,
       content,
       status: "pending",
-    })
-    .select("id")
-    .single();
+    });
 
-  if (error || !review) {
-    if (error) console.error("Failed to submit review", error);
+  if (error) {
+    console.error("Failed to submit review", error);
     return NextResponse.json({ error: "Failed to submit review" }, { status: 500 });
   }
 
@@ -156,10 +157,10 @@ export async function POST(request: Request) {
     user_id: user.id,
     amount: XP_REWARDS.review_posted,
     reason: "review_posted",
-    source_id: review.id,
+    source_id: reviewId,
   });
 
-  return NextResponse.json({ success: true, id: review.id }, { status: 201 });
+  return NextResponse.json({ success: true, id: reviewId }, { status: 201 });
 }
 
 const moderateSchema = z.object({
