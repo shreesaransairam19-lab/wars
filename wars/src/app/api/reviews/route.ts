@@ -26,8 +26,8 @@ export async function GET(request: Request) {
     .from("reviews")
     .select(
       `id, content, created_at, chapter_id, status,
-       profiles:user_id (id, username, avatar_path),
-       chapters (chapter_number)`
+       profiles:profiles!reviews_user_id_fkey (id, username, avatar_path),
+       chapters:chapters!reviews_chapter_id_fkey (chapter_number)`
     )
     .eq("series_id", seriesId)
     .order("created_at", { ascending: false })
@@ -42,6 +42,7 @@ export async function GET(request: Request) {
   const { data, error } = await query;
 
   if (error) {
+    console.error("Failed to fetch reviews", error);
     return NextResponse.json({ error: "Failed to fetch reviews" }, { status: 500 });
   }
 
@@ -146,6 +147,7 @@ export async function POST(request: Request) {
     .single();
 
   if (error || !review) {
+    if (error) console.error("Failed to submit review", error);
     return NextResponse.json({ error: "Failed to submit review" }, { status: 500 });
   }
 
