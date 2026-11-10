@@ -8,7 +8,7 @@ import { hasRole } from "@/lib/permissions/guards";
 import { XP_REWARDS } from "@/lib/xp/calculate";
 import { z } from "zod";
 
-// GET /api/reviews?series_id=xxx — approved reviews
+// GET /api/reviews?series_id=xxx — approved reviews plus the signed-in user's pending reviews
 export async function GET(request: Request) {
   const supabase = await createClient();
   const url = new URL(request.url);
@@ -18,17 +18,28 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "series_id required" }, { status: 400 });
   }
 
-  const { data, error } = await supabase
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  let query = supabase
     .from("reviews")
     .select(
-      `id, content, created_at, chapter_id,
+      `id, content, created_at, chapter_id, status,
        profiles:user_id (id, username, avatar_path),
        chapters (chapter_number)`
     )
     .eq("series_id", seriesId)
-    .eq("status", "approved")
     .order("created_at", { ascending: false })
     .limit(50);
+
+  // RLS allows readers to see only approved reviews and their own pending review(s).
+  // Keep the filter aligned with that policy so authors can confirm their submission.
+  query = user
+    ? query.or(`status.eq.approved,and(status.eq.pending,user_id.eq.${user.id})`)
+    : query.eq("status", "approved");
+
+  const { data, error } = await query;
 
   if (error) {
     return NextResponse.json({ error: "Failed to fetch reviews" }, { status: 500 });

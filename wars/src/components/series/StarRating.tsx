@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Star } from "lucide-react";
 
 export function StarRating({ seriesId }: { seriesId: string }) {
@@ -8,6 +9,7 @@ export function StarRating({ seriesId }: { seriesId: string }) {
   const [count, setCount] = useState(0);
   const [mine, setMine] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -28,21 +30,31 @@ export function StarRating({ seriesId }: { seriesId: string }) {
 
   async function rate(value: number) {
     setBusy(true);
-    const res = await fetch("/api/ratings", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ series_id: seriesId, rating: value }),
-    });
-    if (res.ok) {
+    setMessage("");
+    try {
+      const res = await fetch("/api/ratings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ series_id: seriesId, rating: value }),
+      });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        setMessage(res.status === 401 ? "Sign in to rate this title." : json.error ?? "Could not save your rating.");
+        return;
+      }
       setMine(value);
+      setMessage("Rating saved.");
       const refresh = await fetch(`/api/ratings?series_id=${seriesId}`);
       if (refresh.ok) {
         const json = await refresh.json();
         setAverage(json.average);
         setCount(json.count);
       }
+    } catch {
+      setMessage("Could not reach WARS. Check your connection and try again.");
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }
 
   return (
@@ -71,6 +83,14 @@ export function StarRating({ seriesId }: { seriesId: string }) {
         {average > 0 ? `${average} (${count})` : "No ratings yet"}
         {mine > 0 && " · you rated"}
       </span>
+      {message && (
+        <span className="text-[11px] text-muted" role="status" aria-live="polite">
+          {message}
+          {message === "Sign in to rate this title." && (
+            <> <Link href="/login" className="font-semibold text-accent hover:underline">Sign in</Link></>
+          )}
+        </span>
+      )}
     </div>
   );
 }

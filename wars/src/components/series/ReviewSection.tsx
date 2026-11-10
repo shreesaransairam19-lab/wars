@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { StarRating } from "./StarRating";
 import { ProfileAvatar } from "@/components/auth/ProfileAvatar";
 
@@ -44,23 +45,28 @@ export function ReviewSection({
     e.preventDefault();
     setBusy(true);
     setMessage("");
-    const res = await fetch("/api/reviews", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ series_id: seriesId, content }),
-    });
-    const json = await res.json();
-    setBusy(false);
-    if (!res.ok) {
-      setMessage(json.error ?? "Could not submit review");
-      return;
-    }
-    setContent("");
-    setMessage("Review submitted — awaiting moderation.");
-    const refresh = await fetch(`/api/reviews?series_id=${seriesId}`);
-    if (refresh.ok) {
-      const json = await refresh.json();
-      setReviews(json.reviews ?? []);
+    try {
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ series_id: seriesId, content }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setMessage(res.status === 401 ? "Sign in to post a review." : json.error ?? "Could not submit review");
+        return;
+      }
+      setContent("");
+      setMessage("Review submitted — awaiting moderation.");
+      const refresh = await fetch(`/api/reviews?series_id=${seriesId}`);
+      if (refresh.ok) {
+        const refreshed = await refresh.json();
+        setReviews(refreshed.reviews ?? []);
+      }
+    } catch {
+      setMessage("Could not reach WARS. Check your connection and try again.");
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -107,7 +113,14 @@ export function ReviewSection({
           >
             {busy ? "Posting..." : "Post review"}
           </button>
-          {message && <span className="text-[11px] text-muted">{message}</span>}
+          {message && (
+            <span className="text-[11px] text-muted" role="status" aria-live="polite">
+              {message}
+              {message === "Sign in to post a review." && (
+                <> <Link href="/login" className="font-semibold text-accent hover:underline">Sign in</Link></>
+              )}
+            </span>
+          )}
         </div>
       </form>
 
@@ -135,6 +148,9 @@ export function ReviewSection({
                 {new Date(review.created_at).toLocaleDateString()}
               </time>
             </div>
+            {review.status === "pending" && (
+              <p className="mb-1.5 text-[11px] font-semibold text-[#f2c96b]">Awaiting moderator approval</p>
+            )}
             <p className="whitespace-pre-line text-sm leading-relaxed">{review.content}</p>
             {canModerate && (
               <div className="mt-2 flex gap-2 text-[11px]">
