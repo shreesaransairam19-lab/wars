@@ -264,7 +264,7 @@ export async function POST(request: Request) {
       success: true,
       ephemeral: true,
       message: {
-        id: crypto.randomUUID(),
+        id: parsed.data.id ?? crypto.randomUUID(),
         content,
         message_type: parsed.data.message_type,
         created_at: createdAt,
@@ -284,6 +284,7 @@ export async function POST(request: Request) {
   const { data: message, error } = await admin
     .from("chat_messages")
     .insert({
+      ...(parsed.data.id ? { id: parsed.data.id } : {}),
       room_id: parsed.data.room_id,
       sender_id: user.id,
       content,

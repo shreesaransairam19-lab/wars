@@ -24,6 +24,7 @@ interface Message {
   sender_id: string;
   profiles: { username: string; display_name?: string | null; avatar_path?: string | null; role?: string | null; frame_id?: string | null } | null;
   message_reactions?: { reaction: string; user_id: string }[];
+  delivery?: "sending" | "sent";
 }
 
 interface Gif {
@@ -83,6 +84,7 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
   const [gifs, setGifs] = useState<Gif[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
   const dmChannelRef = useRef<RealtimeChannel | null>(null);
+  const pendingMessagesRef = useRef(new Map<string, { roomId: string; message: Message }>());
   const [dmConnected, setDmConnected] = useState(false);
   const [dmPeerOnline, setDmPeerOnline] = useState(false);
 
@@ -174,7 +176,21 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
           if (!cancelled) setError(json.error ?? "Could not load chat messages");
         } else {
           const json = await res.json();
-          if (!cancelled) { setMessages(json.messages ?? []); setError(""); }
+          if (!cancelled) {
+            const incoming = (json.messages ?? []) as Message[];
+            const incomingIds = new Set(incoming.map((message) => message.id));
+            for (const [id, pending] of pendingMessagesRef.current) {
+              if (pending.roomId !== activeRoom) continue;
+              if (incomingIds.has(id)) {
+                pendingMessagesRef.current.delete(id);
+              } else {
+                incoming.push(pending.message);
+              }
+            }
+            incoming.sort((a, b) => a.created_at.localeCompare(b.created_at));
+            setMessages(incoming);
+            setError("");
+          }
         }
       } catch {
         if (!cancelled) setError("Connection interrupted. Reconnecting…");
@@ -223,44 +239,95 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
       setSendError("The other reader is offline. Messages aren’t queued for later delivery.");
       return;
     }
+
+    const messageId = crypto.randomUUID();
+    const ownProfile = messages.find((message) => message.sender_id === currentUserId)?.profiles ?? {
+      username: "You",
+      display_name: "You",
+      avatar_path: null,
+      role: null,
+      frame_id: null,
+    };
+    const optimisticMessage: Message = {
+      id: messageId,
+      content,
+      message_type: "text",
+      created_at: new Date().toISOString(),
+      sender_id: currentUserId,
+      profiles: ownProfile,
+      message_reactions: [],
+      delivery: "sending",
+    };
+    if (!isDm) pendingMessagesRef.current.set(messageId, { roomId: activeRoom, message: optimisticMessage });
+    const rollbackOptimisticMessage = () => {
+      pendingMessagesRef.current.delete(messageId);
+      setMessages((current) => {
+        const next = current.filter((message) => message.id !== messageId);
+        if (isDm) saveLocalDmMessages(currentUserId, activeRoom, next);
+        return next;
+      });
+    };
+    setMessages((current) => {
+      const next = [...current, optimisticMessage];
+      if (isDm) saveLocalDmMessages(currentUserId, activeRoom, next);
+      return next;
+    });
     setInput("");
     setError("");
     setSendError("");
-    const res = await fetch("/api/chat/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ room_id: activeRoom, content }),
-    });
-    if (!res.ok) {
-      const json = await res.json().catch(() => ({}));
-      if (res.status === 403 && String(json.error ?? "").toLowerCase().includes("banned")) {
-        window.location.assign("/banned");
-        return;
-      }
-      setSendError(json.error ?? "Could not send");
-      setInput(content);
-    } else if (isDm) {
-      const json = await res.json().catch(() => ({}));
-      const message = json.message as Message | undefined;
-      if (!message || !dmChannelRef.current) {
-        setSendError("Could not prepare the private message. Please retry.");
-        setInput(content);
-        return;
-      }
-      const sent = await dmChannelRef.current.send({ type: "broadcast", event: "message", payload: { message } });
-      if (sent !== "ok") {
-        setSendError("The other reader could not be reached. They must be online to receive a private message.");
-        setInput(content);
-        return;
-      }
-      setMessages((current) => {
-        const next = mergeDmMessage(current, message);
-        saveLocalDmMessages(currentUserId, activeRoom, next);
-        return next;
+    try {
+      const res = await fetch("/api/chat/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: messageId, room_id: activeRoom, content }),
       });
-    } else {
-      const refresh = await fetch(`/api/chat/messages?room_id=${activeRoom}`);
-      if (refresh.ok) setMessages((await refresh.json()).messages ?? []);
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (res.status === 403 && String(json.error ?? "").toLowerCase().includes("banned")) {
+          rollbackOptimisticMessage();
+          window.location.assign("/banned");
+          return;
+        }
+        setSendError(json.error ?? "Could not send");
+        setInput(content);
+        rollbackOptimisticMessage();
+        return;
+      }
+
+      if (isDm) {
+        const serverMessage = json.message as Message | undefined;
+        const channel = dmChannelRef.current;
+        if (!serverMessage || !channel) {
+          setSendError("Could not prepare the private message. Please retry.");
+          setInput(content);
+          rollbackOptimisticMessage();
+          return;
+        }
+        const sent = await channel.send({ type: "broadcast", event: "message", payload: { message: serverMessage } });
+        if (sent !== "ok") {
+          setSendError("The other reader could not be reached. They must be online to receive a private message.");
+          setInput(content);
+          rollbackOptimisticMessage();
+          return;
+        }
+        setMessages((current) => {
+          const next = mergeDmMessage(current, { ...serverMessage, delivery: "sent" });
+          saveLocalDmMessages(currentUserId, activeRoom, next);
+          return next;
+        });
+      } else {
+        pendingMessagesRef.current.set(messageId, {
+          roomId: activeRoom,
+          message: { ...optimisticMessage, delivery: "sent" },
+        });
+        setMessages((current) => current.map((message) =>
+          message.id === messageId ? { ...message, delivery: "sent" } : message
+        ));
+      }
+    } catch {
+      rollbackOptimisticMessage();
+      setInput(content);
+      setSendError("Connection interrupted. Please retry.");
     }
   }
 
@@ -500,6 +567,7 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
                       minute: "2-digit",
                     })}
                   </time>
+                  {message.delivery === "sending" && <span className="text-[10px] text-muted">Sending…</span>}
                 </div>
                 {message.message_type === "image" ? (
                   // eslint-disable-next-line @next/next/no-img-element

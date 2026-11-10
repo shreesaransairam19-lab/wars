@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const chatMessageSchema = z.object({
+  id: z.string().uuid().optional(),
   room_id: z.string().uuid(),
   content: z
     .string()
