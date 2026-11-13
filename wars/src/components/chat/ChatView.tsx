@@ -4,8 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { RoleName } from "@/components/auth/RoleName";
+import { RoleBadge } from "@/components/auth/RoleBadge";
 import { ProfileAvatar } from "@/components/auth/ProfileAvatar";
 import { Send, ImagePlay } from "lucide-react";
+import Image from "next/image";
+import giphyPoweredBy from "@/assets/giphy-powered-by.svg";
 
 export interface Room {
   id: string;
@@ -31,7 +34,60 @@ interface Gif {
   id: string;
   title: string;
   preview: string;
-  url: string;
+  pageUrl: string | null;
+  username: string | null;
+  userProfileUrl: string | null;
+}
+
+interface GiphyMessageDetails {
+  id: string;
+  username: string | null;
+  userProfileUrl: string | null;
+  pageUrl: string | null;
+}
+
+function isDirectImageUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && /\.(gif|png|jpe?g|webp)$/i.test(url.pathname);
+  } catch {
+    return false;
+  }
+}
+
+function giphyMessageContent(gif: Gif) {
+  const details = [
+    encodeURIComponent(gif.username ?? ""),
+    encodeURIComponent(gif.userProfileUrl ?? ""),
+    encodeURIComponent(gif.pageUrl ?? ""),
+  ];
+  return `giphy:${gif.id}|${details.join("|")}`;
+}
+
+function parseGiphyMessage(content: string): GiphyMessageDetails | null {
+  if (!content.startsWith("giphy:")) return null;
+  const [id, username = "", userProfileUrl = "", pageUrl = ""] = content.slice(6).split("|");
+  if (!id || !/^[\w-]{1,128}$/.test(id)) return null;
+  try {
+    return {
+      id,
+      username: decodeURIComponent(username) || null,
+      userProfileUrl: decodeURIComponent(userProfileUrl) || null,
+      pageUrl: decodeURIComponent(pageUrl) || null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function safeExternalUrl(value: string | null) {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && ["giphy.com", "www.giphy.com"].includes(url.hostname) ? url.href : null;
+  } catch {
+    return null;
+  }
 }
 
 function dmStorageKey(userId: string, roomId: string) {
@@ -82,6 +138,8 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
   const [gifOpen, setGifOpen] = useState(false);
   const [gifQuery, setGifQuery] = useState("");
   const [gifs, setGifs] = useState<Gif[]>([]);
+  const [gifError, setGifError] = useState("");
+  const [gifLoading, setGifLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const dmChannelRef = useRef<RealtimeChannel | null>(null);
   const pendingMessagesRef = useRef(new Map<string, { roomId: string; message: Message }>());
@@ -202,21 +260,36 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
     void load();
 
     const supabase = isSupabaseConfigured() ? createClient() : null;
+    let refreshTimer: number | null = null;
+    const startFallbackPolling = () => {
+      if (refreshTimer === null) refreshTimer = window.setInterval(() => void load(), 5000);
+    };
+    const stopFallbackPolling = () => {
+      if (refreshTimer !== null) {
+        window.clearInterval(refreshTimer);
+        refreshTimer = null;
+      }
+    };
     const channel = supabase?.channel(`room:${activeRoom}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "chat_messages", filter: `room_id=eq.${activeRoom}` },
         () => void load()
-      )
-      .subscribe();
-    // Polling is the fallback when Supabase Realtime is disabled or disconnected.
-    const refreshTimer = window.setInterval(() => void load(), 500);
+      );
+    // Realtime handles normal updates. Poll only while it is unavailable,
+    // avoiding a database request every half-second for every open chat.
+    startFallbackPolling();
+    channel?.subscribe((status) => {
+      if (cancelled) return;
+      if (status === "SUBSCRIBED") stopFallbackPolling();
+      else startFallbackPolling();
+    });
     const refreshWhenVisible = () => { if (document.visibilityState === "visible") void load(); };
     document.addEventListener("visibilitychange", refreshWhenVisible);
 
     return () => {
       cancelled = true;
-      window.clearInterval(refreshTimer);
+      stopFallbackPolling();
       document.removeEventListener("visibilitychange", refreshWhenVisible);
       if (supabase && channel) void supabase.removeChannel(channel);
     };
@@ -387,15 +460,60 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
   }
 
   async function searchGifs(query: string) {
-    const res = await fetch(`/api/gifs?q=${encodeURIComponent(query)}`);
-    if (!res.ok) return;
-    const json = await res.json();
-    setGifs(json.gifs ?? []);
+    const apiKey = process.env.NEXT_PUBLIC_GIPHY_API_KEY;
+    if (!apiKey) {
+      setGifs([]);
+      setGifError("GIF search needs NEXT_PUBLIC_GIPHY_API_KEY in Vercel.");
+      return;
+    }
+
+    setGifLoading(true);
+    setGifError("");
+    try {
+      const endpoint = query.trim() ? "search" : "trending";
+      const params = new URLSearchParams({ api_key: apiKey, limit: "24", rating: "pg-13" });
+      if (query.trim()) params.set("q", query.trim());
+      const res = await fetch(`https://api.giphy.com/v1/gifs/${endpoint}?${params}`, { cache: "no-store" });
+      const json = await res.json().catch(() => ({})) as {
+        data?: Array<{
+          id: string;
+          title?: string;
+          url?: string;
+          images?: { fixed_width?: { url?: string } };
+          user?: { username?: string; profile_url?: string };
+        }>;
+      };
+      if (!res.ok) {
+        setGifs([]);
+        setGifError(res.status === 429
+          ? "GIPHY search is busy. Wait a moment and try again."
+          : "GIPHY search is temporarily unavailable.");
+        return;
+      }
+      const results: Gif[] = (json.data ?? []).flatMap((gif) => {
+        const preview = gif.images?.fixed_width?.url;
+        if (!gif.id || !preview) return [];
+        return [{
+          id: gif.id,
+          title: gif.title ?? "GIF",
+          preview,
+          pageUrl: gif.url ?? null,
+          username: gif.user?.username ?? null,
+          userProfileUrl: gif.user?.profile_url ?? null,
+        }];
+      });
+      setGifs(results);
+      if (results.length === 0) setGifError("No GIFs found. Try another search.");
+    } catch {
+      setGifError("Could not reach GIF search. Check your connection and retry.");
+    } finally {
+      setGifLoading(false);
+    }
   }
 
-  async function sendGif(url: string) {
+  async function sendGif(gifOrUrl: Gif | string) {
     if (!activeRoom) return;
-    setGifOpen(false);
+    const content = typeof gifOrUrl === "string" ? gifOrUrl : giphyMessageContent(gifOrUrl);
     const isDm = activeRoomData?.room_type === "dm";
     if (isDm && (!dmConnected || !dmChannelRef.current)) {
       setSendError("Connect to the live private-message relay before sending.");
@@ -408,7 +526,7 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
     const res = await fetch("/api/chat/messages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ room_id: activeRoom, content: url, message_type: "image" }),
+      body: JSON.stringify({ room_id: activeRoom, content, message_type: "image" }),
     });
     if (!res.ok) {
       const json = await res.json().catch(() => ({}));
@@ -416,7 +534,7 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
         window.location.assign("/banned");
         return;
       }
-      setError(json.error ?? "Could not send GIF");
+      setGifError(json.error ?? "Could not send GIF");
     } else if (isDm) {
       const json = await res.json().catch(() => ({}));
       const message = json.message as Message | undefined;
@@ -428,6 +546,9 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
         saveLocalDmMessages(currentUserId, activeRoom, next);
         return next;
       });
+      setGifOpen(false);
+    } else {
+      setGifOpen(false);
     }
   }
 
@@ -549,7 +670,7 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
             );
             return (
               <div key={message.id} className="group">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <ProfileAvatar
                     userId={message.sender_id}
                     avatarPath={message.profiles?.avatar_path}
@@ -561,6 +682,7 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
                   <RoleName role={message.profiles?.role} className="role-name-glow text-[12px] font-semibold">
                     {message.profiles?.display_name || message.profiles?.username || "reader"}
                   </RoleName>
+                  {message.profiles?.role && <RoleBadge role={message.profiles.role} />}
                   <time className="text-[10px] text-muted">
                     {new Date(message.created_at).toLocaleTimeString([], {
                       hour: "2-digit",
@@ -569,15 +691,35 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
                   </time>
                   {message.delivery === "sending" && <span className="text-[10px] text-muted">Sending…</span>}
                 </div>
-                {message.message_type === "image" ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={message.content}
-                    alt="GIF"
-                    loading="lazy"
-                    className="mt-1 max-h-56 rounded-lg"
-                  />
-                ) : (
+                {message.message_type === "image" ? (() => {
+                  const giphy = parseGiphyMessage(message.content);
+                  const creatorUrl = safeExternalUrl(giphy?.userProfileUrl ?? null);
+                  const pageUrl = safeExternalUrl(giphy?.pageUrl ?? null);
+                  return giphy ? (
+                    <div className="mt-1 w-fit max-w-full">
+                      <iframe
+                        src={`https://giphy.com/embed/${encodeURIComponent(giphy.id)}`}
+                        title="GIPHY animation"
+                        loading="lazy"
+                        allowFullScreen
+                        className="h-56 max-w-full rounded-lg border-0"
+                        width="320"
+                      />
+                      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 pt-1">
+                        <span className="text-[10px] text-muted">
+                          {creatorUrl && giphy.username ? <>GIF by <a href={creatorUrl} target="_blank" rel="noreferrer" className="underline">{giphy.username}</a>{" · "}</> : null}
+                          {pageUrl && <a href={pageUrl} target="_blank" rel="noreferrer" className="underline">View on GIPHY</a>}
+                        </span>
+                        <a href="https://giphy.com" target="_blank" rel="noreferrer" aria-label="Powered by GIPHY">
+                          <Image src={giphyPoweredBy} alt="Powered by GIPHY" width={100} height={21} unoptimized />
+                        </a>
+                      </div>
+                    </div>
+                  ) : (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={message.content} alt="GIF" loading="lazy" className="mt-1 max-h-56 rounded-lg" />
+                  );
+                })() : (
                   <p className="whitespace-pre-line break-words text-sm leading-relaxed">
                     {message.content}
                   </p>
@@ -610,32 +752,67 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
 
         {gifOpen && (
           <div className="border-t border-line bg-panel p-3">
-            <input
-              value={gifQuery}
-              onChange={(e) => setGifQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  void searchGifs(gifQuery);
-                }
-              }}
-              placeholder="Search GIFs and press Enter"
-              aria-label="Search GIFs"
-              className="mb-2 w-full rounded-lg border border-line bg-panel2 px-3 py-1.5 text-xs outline-none focus:border-accent"
-            />
-            <div className="grid max-h-40 grid-cols-4 gap-1.5 overflow-y-auto sm:grid-cols-6">
-              {gifs.map((gif) => (
+            <div className="flex gap-2">
+              <input
+                value={gifQuery}
+                onChange={(e) => setGifQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void searchGifs(gifQuery);
+                  }
+                }}
+                placeholder="Search GIPHY or paste a direct image link"
+                aria-label="Search GIPHY or paste an image link"
+                className="min-w-0 flex-1 rounded-lg border border-line bg-panel2 px-3 py-1.5 text-xs outline-none focus:border-accent"
+              />
+              <button
+                type="button"
+                onClick={() => void searchGifs(gifQuery)}
+                disabled={gifLoading}
+                className="rounded-lg border border-line px-3 py-1.5 text-xs disabled:opacity-50"
+              >
+                {gifLoading ? "Searching…" : "Search"}
+              </button>
+              {isDirectImageUrl(gifQuery.trim()) && (
                 <button
-                  key={gif.id}
                   type="button"
-                  onClick={() => sendGif(gif.url)}
-                  className="overflow-hidden rounded-md border border-transparent hover:border-accent"
-                  aria-label={gif.title || "Send GIF"}
+                  onClick={() => void sendGif(gifQuery.trim())}
+                  className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-[#171a11]"
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={gif.preview} alt="" loading="lazy" className="h-16 w-full object-cover" />
+                  Send link
                 </button>
-              ))}
+              )}
+            </div>
+            {gifError && <p className="mt-2 text-xs text-pink" role="status">{gifError}</p>}
+            <div className="mt-2 flex items-center justify-between">
+              <span className="text-[10px] text-muted">GIFs by GIPHY</span>
+              <a href="https://giphy.com" target="_blank" rel="noreferrer" aria-label="Powered by GIPHY">
+                <Image src={giphyPoweredBy} alt="Powered by GIPHY" width={100} height={21} unoptimized />
+              </a>
+            </div>
+            <div className="grid max-h-40 grid-cols-3 gap-1.5 overflow-y-auto sm:grid-cols-6">
+              {gifs.map((gif) => {
+                const creatorUrl = safeExternalUrl(gif.userProfileUrl);
+                return (
+                  <div key={gif.id} className="min-w-0 overflow-hidden rounded-md border border-line">
+                    <button
+                      type="button"
+                      onClick={() => void sendGif(gif)}
+                      className="block w-full hover:ring-1 hover:ring-accent"
+                      aria-label={`Send ${gif.title || "GIF"}`}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={gif.preview} alt={gif.title} loading="lazy" className="h-16 w-full object-cover" />
+                    </button>
+                    {gif.username && creatorUrl && (
+                      <a href={creatorUrl} target="_blank" rel="noreferrer" className="block truncate px-1 py-0.5 text-[9px] text-muted underline">
+                        by {gif.username}
+                      </a>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
