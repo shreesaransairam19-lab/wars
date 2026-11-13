@@ -66,7 +66,7 @@ export function ProfileFramesPanel({
 
       {error && <p role="alert" className="mt-4 rounded-lg border border-[#704044] bg-[#332329] px-3 py-2 text-sm text-[#ffb2b2]">{error}</p>}
       {loading ? <div className="mt-5 h-20 animate-pulse rounded-xl bg-panel2" /> : ownedFrameIds.length === 0 ? (
-        <div className="mt-5 rounded-xl border border-dashed border-line px-4 py-6 text-center text-sm text-muted">No purchased frames yet. Browse the store to get your first frame.</div>
+        <div className="mt-5 rounded-xl border border-dashed border-line px-4 py-6 text-center text-sm text-muted">No profile frames unlocked yet. Browse the store to get your first frame.</div>
       ) : (
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           {ownedFrameIds.map((frameId) => {
@@ -74,7 +74,7 @@ export function ProfileFramesPanel({
             if (!frame) return null;
             const equipped = equippedFrameId === frame.id;
             return <div key={frame.id} className="flex items-center justify-between gap-3 rounded-xl border border-line bg-background p-3">
-              <div className="flex min-w-0 items-center gap-3"><ProfileAvatar name="WARS" role="reader" frameId={frame.id} size={44} /><div className="min-w-0"><p className="truncate text-sm font-semibold">{frame.name}</p><p className="text-xs text-muted">Owned frame</p></div></div>
+              <div className="flex min-w-0 items-center gap-3"><ProfileAvatar name="WARS" role="reader" frameId={frame.id} size={44} /><div className="min-w-0"><p className="truncate text-sm font-semibold">{frame.name}</p><p className="text-xs text-muted">Unlocked frame</p></div></div>
               <button type="button" disabled={saving || equipped} onClick={() => void equip(frame.id)} className="shrink-0 rounded-lg border border-line px-3 py-2 text-xs font-semibold disabled:opacity-60">{equipped ? <span className="inline-flex items-center gap-1"><Check className="h-3.5 w-3.5" /> In use</span> : saving ? "Saving…" : "Equip"}</button>
             </div>;
           })}

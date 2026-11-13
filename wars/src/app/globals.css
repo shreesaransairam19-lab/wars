@@ -224,6 +224,11 @@ body {
   padding: 2px;
 }
 
+.profile-avatar-frame--level-100-wings {
+  padding: 0;
+  background: transparent;
+}
+
 .profile-avatar-frame--owner::before,
 .profile-avatar-frame--donator::before,
 .profile-avatar-frame--crunching-fang::before,
@@ -240,6 +245,29 @@ body {
   inset: 0;
   border-radius: inherit;
   content: "";
+  pointer-events: none;
+}
+
+.profile-avatar-frame--level-100-wings::after {
+  position: absolute;
+  content: "";
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
+  inset: -18%;
+  background: radial-gradient(circle, rgba(255, 192, 48, .7), rgba(218, 35, 70, .28) 56%, transparent 78%);
+  animation: wars-avatar-frame-glow 1.2s ease-in-out infinite alternate;
+}
+
+.profile-avatar-level-100-wings__overlay {
+  position: absolute;
+  z-index: 3;
+  inset: -40%;
+  width: 180%;
+  height: 180%;
+  object-fit: contain;
+  mix-blend-mode: screen;
+  filter: drop-shadow(0 0 3px rgba(255, 193, 49, .68));
   pointer-events: none;
 }
 

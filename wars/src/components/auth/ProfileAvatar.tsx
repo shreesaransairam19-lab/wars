@@ -175,6 +175,17 @@ export function ProfileAvatar({
           </g>
         </svg>
       )}
+      {storeFrame?.id === "level-100-wings" && (
+        <Image
+          src="/profile-frames/level-100-wings.jpg"
+          alt=""
+          aria-hidden="true"
+          width={size}
+          height={size}
+          unoptimized
+          className="profile-avatar-level-100-wings__overlay"
+        />
+      )}
     </div>
   );
 }
