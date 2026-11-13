@@ -224,6 +224,10 @@ body {
   padding: 2px;
 }
 
+.profile-avatar-frame--owner {
+  padding: 0;
+  background: transparent;
+}
 .profile-avatar-frame--admin {
   padding: 0;
   background: transparent;
@@ -234,7 +238,8 @@ body {
   background: transparent;
 }
 
-.profile-avatar-frame--level-100-wings .profile-avatar-frame__portrait {
+.profile-avatar-frame--level-100-wings .profile-avatar-frame__portrait,
+.profile-avatar-frame--owner .profile-avatar-frame__portrait {
   width: 44%;
   height: 44%;
 }
@@ -269,6 +274,23 @@ body {
   animation: wars-avatar-frame-glow 1.2s ease-in-out infinite alternate;
 }
 
+.profile-avatar-frame--owner::before,
+.profile-avatar-frame--owner::after {
+  display: none;
+}
+
+.profile-avatar-owner__overlay {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  object-fit: contain;
+  filter: drop-shadow(0 0 3px rgba(251, 191, 36, .65));
+  pointer-events: none;
+}
 .profile-avatar-admin__overlay {
   position: absolute;
   z-index: 3;

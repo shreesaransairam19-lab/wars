@@ -34,6 +34,8 @@ export function ProfileAvatar({
   const normalizedRole = role?.trim().toLowerCase();
   const storeFrame = getProfileFrame(frameId);
   const isLevel100WingsFrame = storeFrame?.id === "level-100-wings";
+  const isOwnerRoleFrame = !storeFrame && normalizedRole === "owner";
+  const usesExpandedIllustratedFrame = isLevel100WingsFrame || isOwnerRoleFrame;
   const frameClass = storeFrame
     ? `profile-avatar-frame--${storeFrame.id}`
     : normalizedRole === "owner"
@@ -55,8 +57,8 @@ export function ProfileAvatar({
       : null;
 
   const frameStyle: CSSProperties = {
-    width: isLevel100WingsFrame ? size * 1.5 : size,
-    height: isLevel100WingsFrame ? size * 1.5 : size,
+    width: usesExpandedIllustratedFrame ? size * 1.5 : size,
+    height: usesExpandedIllustratedFrame ? size * 1.5 : size,
     fontSize: Math.max(10, size * 0.32),
   };
 
@@ -187,6 +189,17 @@ export function ProfileAvatar({
           height={size}
           unoptimized
           className="profile-avatar-level-100-wings__overlay"
+        />
+      )}
+      {!storeFrame && normalizedRole === "owner" && (
+        <Image
+          src="/profile-frames/owner-role.gif"
+          alt=""
+          aria-hidden="true"
+          width={size}
+          height={size}
+          unoptimized
+          className="profile-avatar-owner__overlay"
         />
       )}
       {!storeFrame && normalizedRole === "admin" && (
