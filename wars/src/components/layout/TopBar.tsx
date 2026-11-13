@@ -3,10 +3,11 @@
 import { useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Bell, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { UserMenu } from "@/features/auth/UserMenu";
 import { useAuth } from "@/features/auth/useAuth";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { AnnouncementBell } from "@/components/layout/AnnouncementBell";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -19,7 +20,7 @@ const navLinks = [
 
 export function TopBar() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { roles } = useAuth();
+  const { roles, user } = useAuth();
   const visibleNavLinks = roles.some((role) => ["owner", "codester", "admin", "editor", "manga_editor", "anime_editor", "moderator"].includes(role))
     ? [...navLinks, { href: "/admin", label: "Admin" }]
     : navLinks;
@@ -64,13 +65,10 @@ export function TopBar() {
 
         {/* Right side */}
         <div className="flex items-center gap-2 md:gap-4">
-          <button
-            type="button"
-            className="relative hidden h-9 w-9 place-items-center rounded-[10px] border border-line bg-panel2 text-sm md:grid"
-            aria-label="Notifications"
-          >
-            <Bell className="h-4 w-4 text-muted" />
-          </button>
+          <AnnouncementBell
+            canPost={roles.some((role) => ["owner", "codester"].includes(role))}
+            isSignedIn={Boolean(user)}
+          />
 
           <UserMenu />
 
