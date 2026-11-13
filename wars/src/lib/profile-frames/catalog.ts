@@ -116,6 +116,17 @@ export const PROFILE_FRAMES = [
     gradient: "conic-gradient(from 0deg, #3b0764, #c4b5fd, #f8fafc, #7c3aed, #1e1b4b, #3b0764)",
     glow: "conic-gradient(#a855f7, #f5d0fe, #ffffff, #7c3aed, #a855f7)",
   },
+  {
+    id: "shadow-cat-ears",
+    name: "Shadow Cat Ears",
+    priceInr: 150,
+    unlockLevel: null,
+    exclusive: true,
+    imageSrc: "/profile-frames/shadow-cat-ears.gif",
+    description: "An animated black-and-white cat-ear accent for your portrait.",
+    gradient: "conic-gradient(from 0deg, #1b1320, #f9a8d4, #ffffff, #2a182e, #c084fc, #1b1320)",
+    glow: "conic-gradient(#f9a8d4, #ffffff, #c084fc, #31203e, #f9a8d4)",
+  },
 ] as const;
 
 export type ProfileFrameId = (typeof PROFILE_FRAMES)[number]["id"];
