@@ -32,7 +32,7 @@ Copy `.env.example` to `.env.local` and fill it:
 
 - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
 - `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID`
-- `GIPHY_API_KEY` (server-side only)
+- `NEXT_PUBLIC_GIPHY_API_KEY` (GIPHY browser key; public by design, required for chat GIF search)
 - `NEXT_PUBLIC_APP_URL` (default `http://localhost:3000`)
 
 Never commit `.env.local` or the service-role key.

@@ -478,16 +478,22 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
     const apiKey = process.env.NEXT_PUBLIC_GIPHY_API_KEY;
     if (!apiKey) {
       setGifs([]);
-      setGifError("GIF search needs NEXT_PUBLIC_GIPHY_API_KEY in Vercel.");
+      setGifError("GIF search needs a GIPHY API key. Add NEXT_PUBLIC_GIPHY_API_KEY to Vercel, then redeploy.");
       return;
     }
 
     setGifLoading(true);
     setGifError("");
     try {
-      const endpoint = query.trim() ? "search" : "trending";
+      const trimmedQuery = query.trim();
+      if (trimmedQuery.length > 50) {
+        setGifs([]);
+        setGifError("GIPHY search terms must be 50 characters or fewer.");
+        return;
+      }
+      const endpoint = trimmedQuery ? "search" : "trending";
       const params = new URLSearchParams({ api_key: apiKey, limit: "24", rating: "pg-13" });
-      if (query.trim()) params.set("q", query.trim());
+      if (trimmedQuery) params.set("q", trimmedQuery);
       const res = await fetch(`https://api.giphy.com/v1/gifs/${endpoint}?${params}`, { cache: "no-store" });
       const json = await res.json().catch(() => ({})) as {
         data?: Array<{
@@ -502,7 +508,9 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
         setGifs([]);
         setGifError(res.status === 429
           ? "GIPHY search is busy. Wait a moment and try again."
-          : "GIPHY search is temporarily unavailable.");
+          : res.status === 401 || res.status === 403
+            ? "GIPHY rejected the API key. Check Vercel's NEXT_PUBLIC_GIPHY_API_KEY and redeploy."
+            : "GIPHY search is temporarily unavailable.");
         return;
       }
       const results: Gif[] = (json.data ?? []).flatMap((gif) => {
