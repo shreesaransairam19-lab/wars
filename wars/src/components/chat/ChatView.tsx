@@ -475,7 +475,8 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
   }
 
   async function searchGifs(query: string) {
-    const apiKey = process.env.NEXT_PUBLIC_GIPHY_API_KEY;
+    // GIPHY's browser API key is public by design; Vercel may override this fallback.
+    const apiKey = process.env.NEXT_PUBLIC_GIPHY_API_KEY || "jg2HsvzHBr6RbuJRUICTLPKyyUIVPmKZ";
     if (!apiKey) {
       setGifs([]);
       setGifError("GIF search needs a GIPHY API key. Add NEXT_PUBLIC_GIPHY_API_KEY to Vercel, then redeploy.");
