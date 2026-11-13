@@ -105,6 +105,17 @@ export const PROFILE_FRAMES = [
     gradient: "conic-gradient(from 0deg, #09090b, #7c3aed, #c4b5fd, #312e81, #111827, #09090b)",
     glow: "conic-gradient(#7c3aed, #c4b5fd, #8b5cf6, #312e81, #7c3aed)",
   },
+  {
+    id: "luffy-gear-5-frame",
+    name: "Luffy Gear 5",
+    priceInr: 150,
+    unlockLevel: null,
+    exclusive: true,
+    imageSrc: "/profile-frames/luffy-gear-5-frame.gif",
+    description: "An animated white-and-violet Gear 5 frame featuring Monkey D. Luffy.",
+    gradient: "conic-gradient(from 0deg, #3b0764, #c4b5fd, #f8fafc, #7c3aed, #1e1b4b, #3b0764)",
+    glow: "conic-gradient(#a855f7, #f5d0fe, #ffffff, #7c3aed, #a855f7)",
+  },
 ] as const;
 
 export type ProfileFrameId = (typeof PROFILE_FRAMES)[number]["id"];

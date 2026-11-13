@@ -35,7 +35,8 @@ export function ProfileAvatar({
   const storeFrame = getProfileFrame(frameId);
   const illustratedFrameSrc = storeFrame && "imageSrc" in storeFrame ? storeFrame.imageSrc : null;
   const isOwnerRoleFrame = !storeFrame && normalizedRole === "owner";
-  const usesExpandedIllustratedFrame = Boolean(illustratedFrameSrc) || isOwnerRoleFrame;
+  const isEditorRoleFrame = !storeFrame && ["editor", "anime_editor", "manga_editor"].includes(normalizedRole ?? "");
+  const usesExpandedIllustratedFrame = Boolean(illustratedFrameSrc) || isOwnerRoleFrame || isEditorRoleFrame;
   const frameClass = storeFrame
     ? `profile-avatar-frame--${storeFrame.id}${illustratedFrameSrc ? " profile-avatar-frame--illustrated" : ""}`
     : normalizedRole === "owner"
@@ -44,7 +45,9 @@ export function ProfileAvatar({
         ? "profile-avatar-frame--donator"
         : normalizedRole === "admin"
           ? "profile-avatar-frame--admin"
-          : "";
+          : isEditorRoleFrame
+            ? "profile-avatar-frame--editor"
+            : "";
 
   useEffect(() => {
     setImageFailed(false);
@@ -203,6 +206,18 @@ export function ProfileAvatar({
           className="profile-avatar-owner__overlay"
         />
       )}
+      {isEditorRoleFrame && (
+        <Image
+          src="/profile-frames/editor-role.gif"
+          alt=""
+          aria-hidden="true"
+          width={size}
+          height={size}
+          unoptimized
+          className="profile-avatar-editor__overlay"
+        />
+      )}
+
       {!storeFrame && normalizedRole === "admin" && (
         <Image
           src="/profile-frames/admin-role.gif"
