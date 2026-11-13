@@ -9,7 +9,11 @@ import { ChapterForm } from "@/components/admin/ChapterForm";
 import { UploadPanel } from "@/components/admin/UploadPanel";
 import { CoverUpload } from "@/components/admin/CoverUpload";
 import { ExternalPdfLinkForm } from "@/components/admin/ExternalPdfLinkForm";
-import { ChevronDown, ChevronRight, Trash2 } from "lucide-react";
+import { ExternalVideoLinkForm } from "@/components/admin/ExternalVideoLinkForm";
+import { BookOpen, ChevronDown, ChevronRight, Clapperboard, Trash2 } from "lucide-react";
+
+const MANGA_CONTENT_TYPES = ["manga", "light_novel"] as const;
+const ANIME_CONTENT_TYPES = ["anime", "anime_movie"] as const;
 
 interface Series {
   id: string;
@@ -37,9 +41,23 @@ export default function AdminContentPage() {
   const [chapters, setChapters] = useState<Record<string, Chapter[]>>({});
   const [loading, setLoading] = useState(true);
   const [seriesError, setSeriesError] = useState("");
+  const [activeLibrary, setActiveLibrary] = useState<"manga" | "anime">("manga");
 
-  const canManageChapters = roles.some((r) => ["owner", "editor"].includes(r));
-  const canDeleteSeries = roles.some((r) => ["owner", "admin"].includes(r));
+  const canManageManga = roles.some((role) => ["owner", "codester", "editor", "manga_editor"].includes(role));
+  const canManageAnime = roles.some((role) => ["owner", "codester", "editor", "anime_editor"].includes(role));
+  const canManageChapters = canManageManga || canManageAnime;
+  const canDeleteSeries = roles.some((role) => ["owner", "codester", "admin"].includes(role));
+  const visibleSeries = seriesList.filter((series) => activeLibrary === "anime"
+    ? series.content_type.startsWith("anime")
+    : ["manga", "light_novel"].includes(series.content_type));
+  const contentTypes = activeLibrary === "anime" ? ANIME_CONTENT_TYPES : MANGA_CONTENT_TYPES;
+
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("library");
+    if (requested === "anime" && canManageAnime) setActiveLibrary("anime");
+    else if (requested === "manga" && canManageManga) setActiveLibrary("manga");
+    else if (!canManageManga && canManageAnime) setActiveLibrary("anime");
+  }, [canManageAnime, canManageManga]);
 
   const fetchSeries = useCallback(async () => {
     try {
@@ -77,6 +95,10 @@ export default function AdminContentPage() {
     try {
       const res = await fetch(`/api/chapters?series_id=${seriesId}`);
       const data = await res.json();
+      if (!res.ok) {
+        alert(data.error ?? "Could not load chapters");
+        return;
+      }
       setChapters((prev) => ({ ...prev, [seriesId]: data.chapters ?? [] }));
       setExpandedSeries(seriesId);
     } catch {
@@ -135,6 +157,7 @@ export default function AdminContentPage() {
   async function deleteChapter(id: string) {
     if (!confirm("Delete this chapter and its assets?")) return;
     const res = await fetch(`/api/chapters?id=${id}`, { method: "DELETE" });
+    const data = await res.json().catch(() => ({}));
     if (res.ok) {
       setChapters((prev) => {
         const next = { ...prev };
@@ -143,6 +166,8 @@ export default function AdminContentPage() {
         }
         return next;
       });
+    } else {
+      alert(data.error ?? "Could not delete chapter");
     }
   }
 
@@ -167,7 +192,7 @@ export default function AdminContentPage() {
         <main className="mx-auto max-w-md px-4 py-20 text-center">
           <h1 className="font-heading text-2xl font-semibold">Access Denied</h1>
           <p className="mt-2 text-sm text-muted">
-            Sign in with an Owner or Editor account to add or remove chapters.
+            Sign in as Owner, Codester, Editor, Manga Editor, or Anime Editor to manage content.
           </p>
         </main>
       </>
@@ -184,27 +209,35 @@ export default function AdminContentPage() {
               Admin
             </span>
             <h1 className="mt-1 font-heading text-2xl font-semibold tracking-tight">
-              Content Management
+              {activeLibrary === "anime" ? "Anime Content" : "Manga Content"}
             </h1>
             <p className="mt-1 text-sm text-muted">
-              Manage series, chapters, and upload files.
+              {activeLibrary === "anime" ? "Manage anime series, movies, episodes, and videos." : "Manage manga, light novels, chapters, and files."}
             </p>
           </div>
-          {roles.includes("owner") && (
+          {roles.some((role) => ["owner", "codester"].includes(role)) && (
             <Link href="/admin/roles" className="rounded-lg border border-line bg-panel px-3 py-2 text-sm text-muted hover:text-foreground">
               Promote Members
             </Link>
           )}
-          {roles.some((role) => ["owner", "admin"].includes(role)) && (
+          {roles.some((role) => ["owner", "codester", "admin"].includes(role)) && (
             <Link href="/admin/frames" className="rounded-lg border border-line bg-panel px-3 py-2 text-sm text-muted hover:text-foreground">
               Frame payments
             </Link>
           )}
         </div>
 
+        <section className="mt-6 rounded-xl border border-line bg-panel p-3" aria-label="Content sections">
+          <div className="grid gap-2 sm:grid-cols-2">
+            {canManageManga && <button type="button" onClick={() => { setActiveLibrary("manga"); window.history.replaceState({}, "", "?library=manga"); setExpandedSeries(null); }} aria-pressed={activeLibrary === "manga"} className={`flex items-center gap-2 rounded-lg border px-4 py-3 text-left text-sm font-semibold ${activeLibrary === "manga" ? "border-accent bg-accent/10 text-accent" : "border-line text-muted hover:text-foreground"}`}><BookOpen className="h-4 w-4" />Manga &amp; Light Novels</button>}
+            {canManageAnime && <button type="button" onClick={() => { setActiveLibrary("anime"); window.history.replaceState({}, "", "?library=anime"); setExpandedSeries(null); }} aria-pressed={activeLibrary === "anime"} className={`flex items-center gap-2 rounded-lg border px-4 py-3 text-left text-sm font-semibold ${activeLibrary === "anime" ? "border-purple-400 bg-purple-500/10 text-purple-200" : "border-line text-muted hover:text-foreground"}`}><Clapperboard className="h-4 w-4" />Anime Series &amp; Movies</button>}
+          </div>
+        </section>
+
         {/* Create series */}
         <div className="mt-6">
           <SeriesForm
+            allowedContentTypes={contentTypes}
             onCreated={(created) => {
               if (created) {
                 const newSeries: Series = { ...created, chapters: [{ count: 0 }] };
@@ -219,7 +252,7 @@ export default function AdminContentPage() {
         {/* Series list */}
         <div className="mt-6">
           <h2 className="mb-3 font-heading text-sm font-semibold">
-            Existing Series ({seriesList.length})
+            {activeLibrary === "anime" ? "Anime Series & Movies" : "Manga & Light Novels"} ({visibleSeries.length})
           </h2>
 
           {seriesError && (
@@ -234,13 +267,15 @@ export default function AdminContentPage() {
                 <div key={i} className="h-12 animate-pulse rounded-lg bg-panel2" />
               ))}
             </div>
-          ) : seriesList.length === 0 ? (
+          ) : visibleSeries.length === 0 ? (
             <div className="rounded-xl border border-dashed border-[#3d3a46] px-4 py-8 text-center text-sm text-muted">
-              No series yet. Create one above.
+              No {activeLibrary === "anime" ? "anime series or movies" : "manga or light novels"} yet. Create one above.
             </div>
           ) : (
             <div className="space-y-2">
-              {seriesList.map((series) => (
+              {visibleSeries.map((series) => {
+                const isAnime = series.content_type.startsWith("anime");
+                return (
                 <div key={series.id} className="rounded-lg border border-line bg-panel">
                   <div className="flex items-center justify-between px-4 py-3">
                     <button
@@ -266,7 +301,7 @@ export default function AdminContentPage() {
                                 ? "Anime Movie"
                                 : "Anime Series"}
                           {" · "}
-                          {series.chapters?.[0]?.count ?? 0} chapters
+                          {series.chapters?.[0]?.count ?? 0} {isAnime ? "episodes" : "chapters"}
                           {" · "}
                           <span
                             className={
@@ -310,6 +345,7 @@ export default function AdminContentPage() {
                           nextChapterNumber={
                             (chapters[series.id]?.length ?? 0) + 1
                           }
+                          itemLabel={series.content_type.startsWith("anime") ? "Episode" : "Chapter"}
                           onCreated={() => {
                             void refreshChapters(series.id);
                           }}
@@ -317,7 +353,7 @@ export default function AdminContentPage() {
                       </div>
 
                       {chapters[series.id]?.length === 0 ? (
-                        <p className="text-[10px] text-muted">No chapters yet.</p>
+                        <p className="text-[10px] text-muted">No {isAnime ? "episodes" : "chapters"} yet.</p>
                       ) : (
                         <div className="space-y-1.5">
                           {chapters[series.id]?.map((chapter) => (
@@ -328,14 +364,26 @@ export default function AdminContentPage() {
                               <div className="flex items-center justify-between gap-3">
                                 <div>
                                   <p className="text-xs font-medium">
-                                    CH {chapter.chapter_number}: {chapter.title}
+                                    {isAnime ? "EP" : "CH"} {chapter.chapter_number}: {chapter.title}
                                   </p>
                                   <p className="text-[9px] text-muted">
-                                    {chapter.chapter_assets?.length ?? 0} files
+                                    {chapter.chapter_assets?.length ?? 0} {isAnime ? "videos" : "files"}
                                   </p>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  {series.content_type === "light_novel" ? (
+                                  {isAnime ? (
+                                    <>
+                                      <UploadPanel
+                                        chapterId={chapter.id}
+                                        assetType="video"
+                                        onPageUploaded={() => void refreshChapters(series.id)}
+                                      />
+                                      <ExternalVideoLinkForm
+                                        chapterId={chapter.id}
+                                        onAdded={() => void refreshChapters(series.id)}
+                                      />
+                                    </>
+                                  ) : series.content_type === "light_novel" ? (
                                     <UploadPanel
                                       chapterId={chapter.id}
                                       assetType="novel"
@@ -365,24 +413,26 @@ export default function AdminContentPage() {
                                   </button>
                                 </div>
                               </div>
-                              <ExternalPdfLinkForm
-                                chapterId={chapter.id}
-                                onAdded={() => void refreshChapters(series.id)}
-                              />
+                              {!isAnime && (
+                                <ExternalPdfLinkForm
+                                  chapterId={chapter.id}
+                                  onAdded={() => void refreshChapters(series.id)}
+                                />
+                              )}
                               {(chapter.chapter_assets ?? []).length > 0 && (
                                 <ul className="mt-2 space-y-1 border-t border-line pt-2">
                                   {chapter.chapter_assets?.map((asset) => (
                                     <li key={asset.id} className="flex items-center justify-between gap-2 text-[10px]">
                                       <span className="truncate text-muted">
                                         {asset.external_url
-                                          ? `External PDF · ${new URL(asset.external_url).hostname}`
-                                          : `${asset.asset_type === "file" ? (asset.storage_path.toLowerCase().endsWith(".pdf") ? "PDF" : "EPUB") : "Page"} · ${asset.storage_path.split("/").at(-1)}`}
+                                          ? `External ${asset.mime_type?.startsWith("video/") ? "video" : "PDF"} · ${new URL(asset.external_url).hostname}`
+                                          : `${asset.mime_type?.startsWith("video/") ? "Video" : asset.asset_type === "file" ? (asset.storage_path.toLowerCase().endsWith(".pdf") ? "PDF" : "EPUB") : "Page"} · ${asset.storage_path.split("/").at(-1)}`}
                                       </span>
                                       <button
                                         type="button"
                                         onClick={() => removeAsset(chapter.id, asset.id)}
                                         className="rounded border border-[#704044] bg-[#332329] p-1 text-[#ffb2b2]"
-                                        aria-label={`Remove ${asset.external_url ? "external PDF link" : asset.storage_path.split("/").at(-1)}`}
+                                        aria-label={`Remove ${asset.external_url ? `external ${asset.mime_type?.startsWith("video/") ? "video" : "PDF"} link` : asset.storage_path.split("/").at(-1)}`}
                                       >
                                         <Trash2 className="h-3 w-3" />
                                       </button>
@@ -397,7 +447,8 @@ export default function AdminContentPage() {
                     </div>
                   )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { hasAnyRole } from "@/lib/permissions/guards";
+import { canManageChapter } from "@/lib/permissions/guards";
 
 // GET /api/chapters/[id]/assets — list assets with signed URLs
 export async function GET(
@@ -77,9 +77,8 @@ export async function DELETE(
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!(await hasAnyRole(user.id, ["owner", "editor"]))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
   const { id: chapterId } = await params;
+  if (!(await canManageChapter(user.id, chapterId))) return NextResponse.json({ error: "Your role cannot edit this library" }, { status: 403 });
   const body = await request.json().catch(() => null);
   const assetId = typeof body?.asset_id === "string" ? body.asset_id : "";
   if (!assetId) return NextResponse.json({ error: "Asset ID required" }, { status: 400 });

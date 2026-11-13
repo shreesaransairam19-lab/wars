@@ -20,8 +20,8 @@ const navLinks = [
 export function TopBar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { roles } = useAuth();
-  const visibleNavLinks = roles.some((role) => ["owner", "admin", "moderator"].includes(role))
-    ? [...navLinks, { href: "/admin/moderation", label: "Moderation" }]
+  const visibleNavLinks = roles.some((role) => ["owner", "codester", "admin", "editor", "manga_editor", "anime_editor", "moderator"].includes(role))
+    ? [...navLinks, { href: "/admin", label: "Admin" }]
     : navLinks;
   const closeMenu = useCallback(() => setMobileOpen(false), []);
 

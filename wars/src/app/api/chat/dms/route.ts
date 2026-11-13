@@ -5,7 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveChatBan } from "@/lib/moderation/chat-ban";
 
 const startSchema = z.object({ username: z.string().trim().min(2).max(32) });
-const blockedRecipientRoles = new Set(["owner", "admin", "editor"]);
+const blockedRecipientRoles = new Set(["owner", "codester", "admin", "editor", "manga_editor", "anime_editor"]);
 
 async function rolesFor(admin: ReturnType<typeof createAdminClient>, userId: string) {
   const { data } = await admin.from("user_roles").select("roles(name)").eq("user_id", userId);
@@ -19,29 +19,28 @@ export async function GET() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (await getActiveChatBan(user.id)) return NextResponse.json({ error: "Your WARS chat access is banned" }, { status: 403 });
   const admin = createAdminClient();
-  // Remove legacy PM bodies left by the previous database-backed chat. Going
-  // forward, /api/chat/messages only returns an ephemeral broadcast payload.
-  const { data: dmRooms, error: dmRoomsError } = await admin.from("chat_rooms").select("id").eq("room_type", "dm");
-  if (dmRoomsError) return NextResponse.json({ error: "Could not prepare private conversations" }, { status: 500 });
-  const allDmRoomIds = (dmRooms ?? []).map((room) => room.id);
-  if (allDmRoomIds.length) {
-    const { error: historyDeleteError } = await admin.from("chat_messages").delete().in("room_id", allDmRoomIds);
-    if (historyDeleteError) return NextResponse.json({ error: "Could not clear legacy private-message history" }, { status: 500 });
-  }
-  const { data: memberships, error } = await admin.from("chat_room_members").select("room_id").eq("user_id", user.id);
+  // Migration 0009 clears legacy PM bodies once and prevents them being stored
+  // again. Avoid scanning every DM room whenever a member opens Chat.
+  const [activeBan, { data: memberships, error }] = await Promise.all([
+    getActiveChatBan(user.id),
+    admin.from("chat_room_members").select("room_id").eq("user_id", user.id),
+  ]);
+  if (activeBan) return NextResponse.json({ error: "Your WARS chat access is banned" }, { status: 403 });
   if (error) return NextResponse.json({ error: "Could not load conversations" }, { status: 500 });
   const ids = (memberships ?? []).map((membership) => membership.room_id);
   if (!ids.length) return NextResponse.json({ conversations: [] });
-  const { data: rooms, error: roomError } = await admin.from("chat_rooms").select("id,name,slug,room_type,parent_room_id").in("id", ids).eq("room_type", "dm");
-  if (roomError) return NextResponse.json({ error: "Could not load conversations" }, { status: 500 });
-  const conversations = await Promise.all((rooms ?? []).map(async (room) => {
-    const { data: peers } = await admin.from("chat_room_members").select("user_id, profiles:user_id(username, display_name)").eq("room_id", room.id).neq("user_id", user.id);
-    const peer = peers?.[0] as { user_id: string; profiles: { username: string; display_name: string | null } | { username: string; display_name: string | null }[] | null } | undefined;
+  const [{ data: rooms, error: roomError }, { data: peers, error: peersError }] = await Promise.all([
+    admin.from("chat_rooms").select("id,name,slug,room_type,parent_room_id").in("id", ids).eq("room_type", "dm"),
+    admin.from("chat_room_members").select("room_id,user_id,profiles:user_id(username, display_name)").in("room_id", ids).neq("user_id", user.id),
+  ]);
+  if (roomError || peersError) return NextResponse.json({ error: "Could not load conversations" }, { status: 500 });
+  const peerByRoom = new Map((peers ?? []).map((peer) => [peer.room_id, peer]));
+  const conversations = (rooms ?? []).map((room) => {
+    const peer = peerByRoom.get(room.id) as { user_id: string; profiles: { username: string; display_name: string | null } | { username: string; display_name: string | null }[] | null } | undefined;
     const profile = Array.isArray(peer?.profiles) ? peer.profiles[0] : peer?.profiles;
     return { ...room, name: profile?.display_name || profile?.username || room.name, username: profile?.username ?? "", peer_id: peer?.user_id ?? null };
-  }));
+  });
   return NextResponse.json({ conversations });
 }
 
@@ -59,7 +58,7 @@ export async function POST(request: Request) {
   if (await getActiveChatBan(target.id)) return NextResponse.json({ error: "This member is currently banned from chat" }, { status: 403 });
   const targetRoles = await rolesFor(admin, target.id);
   if (targetRoles.some((role) => blockedRecipientRoles.has(role))) {
-    return NextResponse.json({ error: "Please use Feedback to contact Owner, Admin, or Editor accounts" }, { status: 403 });
+    return NextResponse.json({ error: "Please use Feedback to contact Owner, Codester, Admin, or Editor accounts" }, { status: 403 });
   }
   const { data: existingMemberships } = await admin.from("chat_room_members").select("room_id").eq("user_id", user.id);
   const ownRoomIds = (existingMemberships ?? []).map((row) => row.room_id);

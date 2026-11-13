@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { hasAnyRole } from "@/lib/permissions/guards";
 
-const MANAGED_ROLES = ["reader", "moderator", "editor", "admin", "donator"] as const;
+const MANAGED_ROLES = ["reader", "moderator", "manga_editor", "anime_editor", "editor", "admin", "codester", "donator"] as const;
 type ManagedRole = (typeof MANAGED_ROLES)[number];
 
 async function getOwner() {

@@ -21,7 +21,7 @@ interface Order {
 
 export default function AdminFramesPage() {
   const { user, roles, loading: authLoading } = useAuth();
-  const allowed = roles.some((role) => ["owner", "admin"].includes(role));
+  const allowed = roles.some((role) => ["owner", "codester", "admin"].includes(role));
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");

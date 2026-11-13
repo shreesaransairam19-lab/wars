@@ -41,8 +41,8 @@ export default function ProfileFramesPage() {
   const [paymentIntent, setPaymentIntent] = useState<PaymentIntent | null>(null);
   const [references, setReferences] = useState<Record<string, string>>({});
   const primaryRole = getPrimaryRole(roles);
-  const isOwner = roles.includes("owner");
-  const isStaff = roles.some((role) => ["owner", "admin"].includes(role));
+  const isOwner = roles.some((role) => ["owner", "codester"].includes(role));
+  const isStaff = roles.some((role) => ["owner", "codester", "admin"].includes(role));
 
   const loadStore = useCallback(async () => {
     const response = await fetch("/api/profile-frames", { cache: "no-store" });

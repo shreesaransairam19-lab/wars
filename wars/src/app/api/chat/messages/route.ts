@@ -10,29 +10,12 @@ import { checkRateLimit, getClientIp, RATE_LIMITS } from "@/lib/security/rate-li
 import { XP_REWARDS, XP_DAILY_CAPS } from "@/lib/xp/calculate";
 
 const GENERAL_CHAT_MESSAGE_LIMIT = 30;
+const GENERAL_CHAT_RETENTION_HOURS = 24;
 
-async function pruneGeneralChat(admin: ReturnType<typeof createAdminClient>, roomId: string) {
-  const { data: newest, error: readError } = await admin
-    .from("chat_messages")
-    .select("id")
-    .eq("room_id", roomId)
-    .order("created_at", { ascending: false })
-    .order("id", { ascending: false })
-    .limit(GENERAL_CHAT_MESSAGE_LIMIT);
-
-  if (readError || !newest?.length) {
-    if (readError) console.error("Could not read general chat retention window", readError);
-    return;
-  }
-
-  const keepIds = newest.map((message) => message.id);
-  const { error: deleteError } = await admin
-    .from("chat_messages")
-    .delete()
-    .eq("room_id", roomId)
-    .not("id", "in", `(${keepIds.join(",")})`);
-
-  if (deleteError) console.error("Could not prune old general chat messages", deleteError);
+async function expireGeneralChat(admin: ReturnType<typeof createAdminClient>, roomId: string) {
+  const retentionCutoff = new Date(Date.now() - GENERAL_CHAT_RETENTION_HOURS * 60 * 60 * 1000).toISOString();
+  const { error: expiryError } = await admin.from("chat_messages").delete().eq("room_id", roomId).lt("created_at", retentionCutoff);
+  if (expiryError) console.error("Could not expire old general chat messages", expiryError);
 }
 
 // GET /api/chat/messages?room_id=xxx&before=iso
@@ -45,9 +28,6 @@ export async function GET(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const activeBan = await getActiveChatBan(user.id);
-  if (activeBan) return NextResponse.json({ error: "Your WARS chat access is banned", ban: activeBan }, { status: 403 });
-
   const url = new URL(request.url);
   const roomId = url.searchParams.get("room_id");
   const before = url.searchParams.get("before");
@@ -58,7 +38,11 @@ export async function GET(request: Request) {
 
   // Private conversations must never rely on a client supplied room id alone.
   const admin = createAdminClient();
-  const { data: room, error: roomError } = await admin.from("chat_rooms").select("id,slug,room_type,visibility").eq("id", roomId).maybeSingle();
+  const [activeBan, { data: room, error: roomError }] = await Promise.all([
+    getActiveChatBan(user.id),
+    admin.from("chat_rooms").select("id,slug,room_type,visibility").eq("id", roomId).maybeSingle(),
+  ]);
+  if (activeBan) return NextResponse.json({ error: "Your WARS chat access is banned", ban: activeBan }, { status: 403 });
   if (roomError) {
     const isAdmin = await hasAnyRole(user.id, ["owner", "admin"]);
     return NextResponse.json({ error: isAdmin ? `Chat room lookup failed (${roomError.code ?? "database"}): ${roomError.message}` : "Could not load this chat room" }, { status: 500 });
@@ -80,7 +64,6 @@ export async function GET(request: Request) {
 
   // We have checked public visibility or private-room membership above, so use
   // the service client here to avoid chat reads failing on inconsistent RLS.
-  if (room.slug === "general-chat-general") await pruneGeneralChat(admin, roomId);
   let query = admin
     .from("chat_messages")
     .select(
@@ -91,6 +74,7 @@ export async function GET(request: Request) {
     .eq("room_id", roomId)
     .order("created_at", { ascending: false })
     .limit(room.slug === "general-chat-general" ? GENERAL_CHAT_MESSAGE_LIMIT : 50);
+  if (room.slug === "general-chat-general") query = query.gte("created_at", new Date(Date.now() - GENERAL_CHAT_RETENTION_HOURS * 60 * 60 * 1000).toISOString());
 
   if (before) {
     query = query.lt("created_at", before);
@@ -139,7 +123,7 @@ export async function GET(request: Request) {
       rolesByUser.set(assignment.user_id, [...current, ...roleRowsForUser.map((role) => role.name)]);
     }
   }
-  const rolePriority = ["owner", "admin", "editor", "moderator", "donator", "reader"];
+  const rolePriority = ["owner", "codester", "admin", "editor", "manga_editor", "anime_editor", "moderator", "donator", "reader"];
   const messagesWithRoles = messages.map((message) => {
     const roles = rolesByUser.get(message.sender_id) ?? ["reader"];
     const primaryRole = rolePriority.find((role) => roles.includes(role)) ?? "reader";
@@ -208,8 +192,26 @@ export async function POST(request: Request) {
     );
   }
 
-  if (parsed.data.message_type === "image" && !/^https:\/\//.test(content)) {
-    return NextResponse.json({ error: "Invalid image URL" }, { status: 400 });
+  if (parsed.data.message_type === "image") {
+    const isGiphyReference = (() => {
+      const parts = content.split("|");
+      const id = parts[0]?.slice("giphy:".length);
+      if (parts.length !== 4 || !parts[0]?.startsWith("giphy:") || !id || !/^[\w-]{1,128}$/.test(id)) return false;
+      return parts.slice(1).every((part, index) => {
+        if (!part) return true;
+        try {
+          const value = decodeURIComponent(part);
+          if (index === 0) return value.length <= 200;
+          const url = new URL(value);
+          return url.protocol === "https:" && ["giphy.com", "www.giphy.com"].includes(url.hostname);
+        } catch {
+          return false;
+        }
+      });
+    })();
+    if (!/^https:\/\//.test(content) && !isGiphyReference) {
+      return NextResponse.json({ error: "Invalid image or GIF reference" }, { status: 400 });
+    }
   }
 
   const admin = createAdminClient();
@@ -250,8 +252,8 @@ export async function POST(request: Request) {
       const roles = row.roles;
       return (Array.isArray(roles) ? roles : roles ? [roles] : []).map((role) => role.name);
     });
-    if (assignedRoles.some((role) => ["owner", "admin", "editor"].includes(role))) {
-      return NextResponse.json({ error: "Please use Feedback to contact Owner, Admin, or Editor accounts" }, { status: 403 });
+    if (assignedRoles.some((role) => ["owner", "codester", "admin", "editor", "manga_editor", "anime_editor"].includes(role))) {
+      return NextResponse.json({ error: "Please use Feedback to contact Owner, Codester, Admin, or Editor accounts" }, { status: 403 });
     }
 
     const [{ data: profile }, role, { data: equippedFrame }] = await Promise.all([
@@ -300,7 +302,9 @@ export async function POST(request: Request) {
   }
 
   if (targetRoom.slug === "general-chat-general") {
-    await pruneGeneralChat(admin, parsed.data.room_id);
+    // The database trigger enforces the 30-message cap on insert. Expire
+    // stale history here, once per new message, rather than on every page load.
+    await expireGeneralChat(admin, parsed.data.room_id);
   }
 
   // XP with daily cap (service-role write only)

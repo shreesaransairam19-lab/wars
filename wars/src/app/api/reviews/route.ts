@@ -69,7 +69,7 @@ export async function GET(request: Request) {
     if (rolesError) {
       console.error("Could not load reviewer roles", rolesError);
     } else {
-      const rolePriority = ["owner", "admin", "editor", "moderator", "donator", "reader"];
+      const rolePriority = ["owner", "codester", "admin", "editor", "manga_editor", "anime_editor", "moderator", "donator", "reader"];
       const assignments = (roleRows ?? []) as {
         user_id: string;
         roles: { name: string } | { name: string }[] | null;

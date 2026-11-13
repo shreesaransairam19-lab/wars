@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { chapterSchema } from "@/lib/validation/series";
-import { hasAnyRole } from "@/lib/permissions/guards";
+import { canManageContentType, canManageChapter, getSeriesContentType } from "@/lib/permissions/guards";
 import { checkRateLimit, RATE_LIMITS, getClientIp } from "@/lib/security/rate-limit";
 
 // GET /api/chapters?series_id=xxx — list chapters for a series
 export async function GET(request: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const canManage = user ? await hasAnyRole(user.id, ["owner", "editor"]) : false;
   const url = new URL(request.url);
   const seriesId = url.searchParams.get("series_id");
 
@@ -16,7 +16,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "series_id required" }, { status: 400 });
   }
 
-  const query = supabase
+  const contentType = await getSeriesContentType(seriesId);
+  const canManage = Boolean(user && contentType && await canManageContentType(user.id, contentType));
+  const db = canManage ? createAdminClient() : supabase;
+  const query = db
     .from("chapters")
     .select(canManage ? "*, chapter_assets(id, asset_type, storage_path, external_url, mime_type)" : "*, chapter_assets(count)")
     .eq("series_id", seriesId)
@@ -41,11 +44,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const canEdit = await hasAnyRole(user.id, ["owner", "editor"]);
-  if (!canEdit) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
   const ip = getClientIp(request);
   const rate = checkRateLimit(`chapter-create:${ip}`, RATE_LIMITS.upload.max, RATE_LIMITS.upload.windowMs);
   if (!rate.allowed) {
@@ -62,7 +60,14 @@ export async function POST(request: Request) {
     );
   }
 
-  const { data, error } = await supabase
+  const seriesType = await getSeriesContentType(parsed.data.series_id);
+  if (!seriesType) return NextResponse.json({ error: "Series not found" }, { status: 404 });
+  if (!(await canManageContentType(user.id, seriesType))) {
+    return NextResponse.json({ error: "Your role cannot add chapters to this library" }, { status: 403 });
+  }
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
     .from("chapters")
     .insert(parsed.data)
     .select()
@@ -72,7 +77,7 @@ export async function POST(request: Request) {
     if (error.code === "23505") {
       return NextResponse.json({ error: "Chapter slug already exists in this series" }, { status: 409 });
     }
-    return NextResponse.json({ error: "Failed to create chapter" }, { status: 500 });
+    return NextResponse.json({ error: `Failed to create chapter: ${error.message}` }, { status: 500 });
   }
 
   return NextResponse.json({ chapter: data }, { status: 201 });
@@ -87,11 +92,6 @@ export async function PATCH(request: Request) {
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const canEdit = await hasAnyRole(user.id, ["owner", "editor"]);
-  if (!canEdit) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const body = await request.json();
@@ -109,7 +109,17 @@ export async function PATCH(request: Request) {
     );
   }
 
-  const { data, error } = await supabase
+  const admin = createAdminClient();
+  const { data: existing, error: existingError } = await admin.from("chapters").select("series_id").eq("id", id).maybeSingle();
+  if (existingError || !existing) return NextResponse.json({ error: "Chapter not found" }, { status: 404 });
+  if (!(await canManageChapter(user.id, id))) {
+    return NextResponse.json({ error: "Your role cannot edit this library" }, { status: 403 });
+  }
+  if (parsed.data.series_id && parsed.data.series_id !== existing.series_id) {
+    return NextResponse.json({ error: "Moving a chapter to another series is not supported" }, { status: 400 });
+  }
+
+  const { data, error } = await admin
     .from("chapters")
     .update(parsed.data)
     .eq("id", id)
@@ -117,7 +127,7 @@ export async function PATCH(request: Request) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: "Failed to update chapter" }, { status: 500 });
+    return NextResponse.json({ error: `Failed to update chapter: ${error.message}` }, { status: 500 });
   }
 
   return NextResponse.json({ chapter: data });
@@ -134,11 +144,6 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const canEdit = await hasAnyRole(user.id, ["owner", "editor"]);
-  if (!canEdit) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
   const url = new URL(request.url);
   const id = url.searchParams.get("id");
 
@@ -146,10 +151,33 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "Chapter ID required" }, { status: 400 });
   }
 
-  const { error } = await supabase.from("chapters").delete().eq("id", id);
+  if (!(await canManageChapter(user.id, id))) {
+    return NextResponse.json({ error: "Your role cannot remove chapters from this library" }, { status: 403 });
+  }
+
+  const admin = createAdminClient();
+  const { data: assets, error: assetsError } = await admin
+    .from("chapter_assets")
+    .select("storage_path")
+    .eq("chapter_id", id);
+  if (assetsError) {
+    return NextResponse.json({ error: `Failed to inspect chapter assets: ${assetsError.message}` }, { status: 500 });
+  }
+
+  const paths = (assets ?? [])
+    .map((asset) => asset.storage_path)
+    .filter((path): path is string => typeof path === "string" && path.length > 0);
+  if (paths.length > 0) {
+    const { error: storageError } = await admin.storage.from("chapter-assets").remove(paths);
+    if (storageError) {
+      return NextResponse.json({ error: `Failed to remove chapter files: ${storageError.message}` }, { status: 500 });
+    }
+  }
+
+  const { error } = await admin.from("chapters").delete().eq("id", id);
 
   if (error) {
-    return NextResponse.json({ error: "Failed to delete chapter" }, { status: 500 });
+    return NextResponse.json({ error: `Failed to delete chapter: ${error.message}` }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 
+export type SeriesContentType = "manga" | "light_novel" | "anime" | "anime_movie";
+
 interface SeriesFormProps {
+  allowedContentTypes?: readonly SeriesContentType[];
   onCreated?: (series?: {
     id: string;
     title: string;
@@ -14,16 +17,25 @@ interface SeriesFormProps {
   }) => void;
 }
 
-export function SeriesForm({ onCreated }: SeriesFormProps) {
+const ALL_CONTENT_TYPES: readonly SeriesContentType[] = ["manga", "light_novel", "anime", "anime_movie"];
+const CONTENT_TYPE_LABELS: Record<SeriesContentType, string> = {
+  manga: "Manga", light_novel: "Light Novel", anime: "Anime Series", anime_movie: "Anime Movie",
+};
+
+export function SeriesForm({ onCreated, allowedContentTypes = ALL_CONTENT_TYPES }: SeriesFormProps) {
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [slugEdited, setSlugEdited] = useState(false);
   const [description, setDescription] = useState("");
-  const [contentType, setContentType] = useState<"manga" | "light_novel" | "anime" | "anime_movie">("manga");
+  const [contentType, setContentType] = useState<SeriesContentType>(allowedContentTypes[0] ?? "manga");
   const [status, setStatus] = useState<"draft" | "published">("published");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    if (!allowedContentTypes.includes(contentType)) setContentType(allowedContentTypes[0] ?? "manga");
+  }, [allowedContentTypes, contentType]);
 
   function autoSlug(value: string) {
     return value
@@ -78,7 +90,7 @@ export function SeriesForm({ onCreated }: SeriesFormProps) {
       onSubmit={handleSubmit}
       className="rounded-xl border border-line bg-panel2 p-4"
     >
-      <h3 className="mb-3 font-heading text-sm font-semibold">New Series</h3>
+      <h3 className="mb-3 font-heading text-sm font-semibold">New {allowedContentTypes.some((type) => type.startsWith("anime")) ? "Anime" : "Manga / Light Novel"} Series</h3>
 
       {error && (
         <div role="alert" className="mb-3 rounded-lg border border-[#704044] bg-[#332329] px-3 py-2 text-xs text-[#ffb2b2]">
@@ -135,12 +147,9 @@ export function SeriesForm({ onCreated }: SeriesFormProps) {
             id="series-type"
             className="w-full rounded-lg border border-line bg-[#121217] px-2.5 py-2 text-xs text-foreground outline-none focus:border-accent"
             value={contentType}
-            onChange={(e) => setContentType(e.target.value as "manga" | "light_novel" | "anime" | "anime_movie")}
+            onChange={(e) => setContentType(e.target.value as SeriesContentType)}
           >
-            <option value="manga">Manga</option>
-            <option value="light_novel">Light Novel</option>
-            <option value="anime">Anime Series</option>
-            <option value="anime_movie">Anime Movie</option>
+            {allowedContentTypes.map((type) => <option key={type} value={type}>{CONTENT_TYPE_LABELS[type]}</option>)}
           </select>
         </div>
 

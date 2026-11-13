@@ -1,26 +1,25 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { hasAnyRole } from "@/lib/permissions/guards";
+import { canManageSeries } from "@/lib/permissions/guards";
 import { generateStoragePath, getImageMimeType, validateCoverFile } from "@/lib/security/file-validation";
 
-async function authorizationError(): Promise<NextResponse | null> {
+async function authorizationError(seriesId: string): Promise<NextResponse | null> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Sign in to manage series" }, { status: 401 });
-  if (!(await hasAnyRole(user.id, ["owner", "editor"]))) {
-    return NextResponse.json({ error: "Owner or Editor permissions are required" }, { status: 403 });
+  if (!seriesId || !(await canManageSeries(user.id, seriesId))) {
+    return NextResponse.json({ error: "Your role cannot manage this library" }, { status: 403 });
   }
   return null;
 }
 
 // Covers upload directly from the browser to Storage, avoiding serverless body limits.
 export async function POST(request: Request) {
-  const authError = await authorizationError();
-  if (authError) return authError;
-
   const body = await request.json().catch(() => null);
   const seriesId = typeof body?.series_id === "string" ? body.series_id : "";
+  const authError = await authorizationError(seriesId);
+  if (authError) return authError;
   const name = typeof body?.name === "string" ? body.name : "";
   const type = getImageMimeType({ name, type: typeof body?.type === "string" ? body.type : "" });
   const size = Number(body?.size);
@@ -59,11 +58,10 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(request: Request) {
-  const authError = await authorizationError();
-  if (authError) return authError;
-
   const body = await request.json().catch(() => null);
   const seriesId = typeof body?.series_id === "string" ? body.series_id : "";
+  const authError = await authorizationError(seriesId);
+  if (authError) return authError;
   const path = typeof body?.path === "string" ? body.path : "";
   const name = typeof body?.name === "string" ? body.name : "";
   const type = getImageMimeType({ name, type: typeof body?.type === "string" ? body.type : "" });
@@ -81,7 +79,7 @@ export async function PUT(request: Request) {
 
   const { data: series, error: updateError } = await admin
     .from("series")
-    .select("cover_path")
+    .select("cover_path, content_type")
     .eq("id", seriesId)
     .maybeSingle();
   if (updateError || !series) return NextResponse.json({ error: "Series not found" }, { status: 404 });

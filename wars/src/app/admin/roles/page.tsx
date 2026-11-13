@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { TopBar } from "@/components/layout/TopBar";
 import { useAuth } from "@/features/auth/useAuth";
+import { RoleBadge } from "@/components/auth/RoleBadge";
 
 type Member = {
   id: string;
@@ -12,12 +13,12 @@ type Member = {
   roles: string[];
 };
 
-const assignableRoles = ["reader", "moderator", "editor", "admin", "donator"] as const;
+const assignableRoles = ["reader", "moderator", "manga_editor", "anime_editor", "editor", "admin", "codester", "donator"] as const;
 type AssignableRole = (typeof assignableRoles)[number];
 
 export default function AdminRolesPage() {
   const { user, roles, loading: authLoading } = useAuth();
-  const isOwner = roles.includes("owner");
+  const isOwner = roles.some((role) => ["owner", "codester"].includes(role));
   const [members, setMembers] = useState<Member[]>([]);
   const [selections, setSelections] = useState<Record<string, AssignableRole>>({});
   const [query, setQuery] = useState("");
@@ -88,7 +89,7 @@ export default function AdminRolesPage() {
           <div>
             <span className="text-[11px] font-bold uppercase tracking-[1.5px] text-purple">Admin</span>
             <h1 className="mt-1 font-heading text-2xl font-semibold tracking-tight">Role Management</h1>
-            <p className="mt-1 text-sm text-muted">Promote or demote members. Only the Owner can change roles.</p>
+            <p className="mt-1 text-sm text-muted">Promote or demote members. The Owner and Codester can change member roles.</p>
           </div>
           <Link href="/admin/content" className="rounded-lg border border-line bg-panel px-3 py-2 text-sm text-muted hover:text-foreground">
             Content Management
@@ -100,12 +101,15 @@ export default function AdminRolesPage() {
         ) : !user || !isOwner ? (
           <div className="mt-8 rounded-xl border border-line bg-panel p-6 text-center">
             <h2 className="font-heading text-lg font-semibold">Owner access required</h2>
-            <p className="mt-2 text-sm text-muted">Sign in with an Owner account to manage member roles.</p>
+            <p className="mt-2 text-sm text-muted">Sign in with an Owner or Codester account to manage member roles.</p>
           </div>
         ) : (
           <>
             <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-panel p-4">
-              <p className="max-w-xl text-sm text-muted">Direct UPI payments cannot be verified automatically. Assign Donator only after checking the member’s cumulative payment confirmations reach $50 USD equivalent.</p>
+              <div className="max-w-xl space-y-2 text-sm text-muted">
+                <p>Codester has site-wide editing access like Owner. Manga Editor manages manga and light novels; Anime Editor manages anime series and movies.</p>
+                <p>Direct UPI payments cannot be verified automatically. Assign Donator only after checking the member’s cumulative payment confirmations reach $50 USD equivalent.</p>
+              </div>
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
@@ -132,9 +136,7 @@ export default function AdminRolesPage() {
                         <p className="truncate text-sm font-semibold">{member.display_name || member.username}</p>
                         <p className="truncate text-xs text-muted">@{member.username}</p>
                         <div className="mt-1 flex flex-wrap gap-1">
-                          {member.roles.map((role) => (
-                            <span key={role} className="rounded-full border border-line px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted">{role}</span>
-                          ))}
+                          {member.roles.map((role) => <RoleBadge key={role} role={role} />)}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -146,7 +148,7 @@ export default function AdminRolesPage() {
                           disabled={protectedOwner}
                           className="rounded-lg border border-line bg-background px-3 py-2 text-sm"
                         >
-                          {assignableRoles.map((role) => <option key={role} value={role}>{role[0].toUpperCase() + role.slice(1)}</option>)}
+                          {assignableRoles.map((role) => <option key={role} value={role}>{role === "manga_editor" ? "Manga Editor" : role === "anime_editor" ? "Anime Editor" : role[0].toUpperCase() + role.slice(1)}</option>)}
                         </select>
                         <button
                           type="button"

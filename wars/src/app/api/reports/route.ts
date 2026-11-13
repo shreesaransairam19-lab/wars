@@ -66,7 +66,7 @@ export async function GET() {
 
   const isMod = (roles ?? []).some(
     (r: { roles: { name: string }[] }) =>
-      r.roles.some((role) => ["owner", "admin", "moderator"].includes(role.name))
+      r.roles.some((role) => ["owner", "codester", "admin", "moderator"].includes(role.name))
   );
   if (!isMod) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

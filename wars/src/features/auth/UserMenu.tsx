@@ -5,8 +5,8 @@ import Link from "next/link";
 import { User, LogOut, Shield, Settings } from "lucide-react";
 import { useAuth } from "@/features/auth/useAuth";
 import { RoleBadge } from "@/components/auth/RoleBadge";
+import { getPrimaryRole, RoleName } from "@/components/auth/RoleName";
 import { ProfileAvatar } from "@/components/auth/ProfileAvatar";
-import { getPrimaryRole } from "@/components/auth/RoleName";
 
 export function UserMenu() {
   const { user, profile, roles, loading, signOut } = useAuth();
@@ -44,9 +44,9 @@ export function UserMenu() {
     profile?.display_name || profile?.username || user.email || "User";
   const primaryRole = getPrimaryRole(roles);
   const isStaff = roles.some((r) =>
-    ["owner", "admin", "editor", "moderator"].includes(r)
+    ["owner", "codester", "admin", "editor", "manga_editor", "anime_editor", "moderator"].includes(r)
   );
-  const canReviewFramePayments = roles.some((r) => ["owner", "admin"].includes(r));
+  const canReviewFramePayments = roles.some((r) => ["owner", "codester", "admin"].includes(r));
 
   return (
     <div ref={menuRef} className="relative">
@@ -67,17 +67,13 @@ export function UserMenu() {
       {open && (
         <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-xl border border-line bg-panel p-2 shadow-[0_10px_35px_rgba(0,0,0,0.4)]">
           <div className="border-b border-line px-3 py-2">
-            <p className="truncate text-sm font-semibold text-foreground">
-              {displayName}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="truncate text-sm font-semibold">
+                <RoleName role={primaryRole}>{displayName}</RoleName>
+              </p>
+              {primaryRole && <RoleBadge role={primaryRole} />}
+            </div>
             <p className="text-[11px] text-muted">@{profile?.username}</p>
-            {roles.length > 0 && (
-              <div className="mt-1.5 flex flex-wrap gap-1">
-                {roles.map((role) => (
-                  <RoleBadge key={role} role={role} />
-                ))}
-              </div>
-            )}
           </div>
 
           <div className="mt-1 flex flex-col">

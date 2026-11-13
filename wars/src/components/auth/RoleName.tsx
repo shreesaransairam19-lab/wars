@@ -1,18 +1,20 @@
-import type { ReactNode } from "react";
-
 const roleNameStyles: Record<string, string> = {
   owner: "role-name-glitter role-name-glitter--owner",
+  codester: "role-name-glitter role-name-glitter--codester",
   editor: "text-emerald-300",
+  manga_editor: "role-name-flame role-name-flame--manga",
+  anime_editor: "role-name-flame role-name-flame--anime",
   admin: "text-red-300",
   moderator: "text-yellow-200",
   donator: "role-name-glitter role-name-glitter--donator",
   reader: "text-white",
 };
 
-const rolePriority = ["owner", "admin", "editor", "moderator", "donator", "reader"];
+const rolePriority = ["owner", "codester", "admin", "editor", "manga_editor", "anime_editor", "moderator", "donator", "reader"];
 
-export function getPrimaryRole(roles: readonly string[]) {
-  return rolePriority.find((role) => roles.includes(role)) ?? "reader";
+export function getPrimaryRole(roles: readonly string[]): string | null {
+  const normalized = roles.map((role) => role.trim().toLowerCase());
+  return rolePriority.find((role) => normalized.includes(role)) ?? normalized[0] ?? null;
 }
 
 export function RoleName({
@@ -21,7 +23,7 @@ export function RoleName({
   className = "",
 }: {
   role?: string | null;
-  children: ReactNode;
+  children: React.ReactNode;
   className?: string;
 }) {
   const normalized = role?.trim().toLowerCase() ?? "";

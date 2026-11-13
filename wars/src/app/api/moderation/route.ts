@@ -105,7 +105,7 @@ export async function POST(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid action" }, { status: 400 });
   const body = parsed.data;
   const actorRoles = await getUserRoles(user.id);
-  const isOwner = actorRoles.includes("owner");
+  const isOwner = actorRoles.some((role) => role === "owner" || role === "codester");
   const isAdmin = actorRoles.includes("admin");
   const isModerator = actorRoles.includes("moderator");
   const admin = createAdminClient();

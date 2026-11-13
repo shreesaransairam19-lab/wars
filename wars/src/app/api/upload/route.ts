@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { hasAnyRole } from "@/lib/permissions/guards";
+import { canManageChapter, canManageContentType, canManageSeries, getChapterContentType } from "@/lib/permissions/guards";
 import {
   validateImageFile,
   validateDocumentFile,
@@ -20,11 +20,6 @@ export async function POST(request: Request) {
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const canEdit = await hasAnyRole(user.id, ["owner", "editor"]);
-  if (!canEdit) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const ip = getClientIp(request);
@@ -50,6 +45,15 @@ export async function POST(request: Request) {
   if (!file) {
     return NextResponse.json({ error: "No file provided" }, { status: 400 });
   }
+  const chapterType = chapterId ? await getChapterContentType(chapterId) : null;
+  const canEdit = assetType === "cover"
+    ? Boolean(seriesId && await canManageSeries(user.id, seriesId))
+    : assetType === "page"
+      ? Boolean(chapterType === "manga" && await canManageContentType(user.id, chapterType))
+      : assetType === "novel"
+        ? Boolean(chapterType && ["manga", "light_novel"].includes(chapterType) && await canManageContentType(user.id, chapterType))
+        : false;
+  if (!canEdit) return NextResponse.json({ error: "Your role cannot upload to this library" }, { status: 403 });
 
   // Validate file based on type
   const fileMeta = { name: file.name, type: file.type, size: file.size };

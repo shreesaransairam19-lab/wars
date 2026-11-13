@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { seriesSchema } from "@/lib/validation/series";
-import { hasRole } from "@/lib/permissions/guards";
+import { canManageContentType, getManageableContentTypes, hasRole } from "@/lib/permissions/guards";
 import { checkRateLimit, RATE_LIMITS, getClientIp } from "@/lib/security/rate-limit";
 
 // GET /api/series — list published series (public) or all (staff)
@@ -15,16 +15,18 @@ export async function GET(request: Request) {
   // and role first, then read with the server client so production RLS cannot
   // silently hide existing series from the content manager.
   const db = createAdminClient();
+  let manageableTypes: string[] = [];
   if (all) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    if (!(await hasRole(user.id, "editor"))) {
+    manageableTypes = await getManageableContentTypes(user.id);
+    if (manageableTypes.length === 0) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
   }
 
   const result = all
-    ? await db.from("series").select("*").order("created_at", { ascending: false })
+    ? await db.from("series").select("*").in("content_type", manageableTypes).order("created_at", { ascending: false })
     : await db
         .from("series")
         .select("id, title, slug, description, content_type, cover_path, status, created_at")
@@ -92,11 +94,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const canEdit = await hasRole(user.id, "editor");
-  if (!canEdit) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
   const ip = getClientIp(request);
   const rate = checkRateLimit(`series-create:${ip}`, RATE_LIMITS.upload.max, RATE_LIMITS.upload.windowMs);
   if (!rate.allowed) {
@@ -113,8 +110,11 @@ export async function POST(request: Request) {
     );
   }
 
-  // Role authorization above is the gate; use the server admin client for the
-  // insert so a stale/missing production RLS policy cannot reject staff work.
+  if (!(await canManageContentType(user.id, parsed.data.content_type))) {
+    return NextResponse.json({ error: "Your role cannot manage this library" }, { status: 403 });
+  }
+
+  // Use the server admin client after checking the member's library-specific role.
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("series")
@@ -147,11 +147,6 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const canEdit = await hasRole(user.id, "editor");
-  if (!canEdit) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
   const body = await request.json();
   const { id, ...updates } = body;
 
@@ -167,7 +162,16 @@ export async function PATCH(request: Request) {
     );
   }
 
-  const { data, error } = await supabase
+  const admin = createAdminClient();
+  const { data: existing, error: existingError } = await admin.from("series")
+    .select("content_type").eq("id", id).maybeSingle();
+  if (existingError || !existing) return NextResponse.json({ error: "Series not found" }, { status: 404 });
+  const targetType = parsed.data.content_type ?? existing.content_type;
+  if (!(await canManageContentType(user.id, existing.content_type)) || !(await canManageContentType(user.id, targetType))) {
+    return NextResponse.json({ error: "Your role cannot manage this library" }, { status: 403 });
+  }
+
+  const { data, error } = await admin
     .from("series")
     .update(parsed.data)
     .eq("id", id)
@@ -242,9 +246,9 @@ export async function DELETE(request: Request) {
       .filter((path): path is string => typeof path === "string" && path.length > 0);
   }
 
-  // Let the authenticated owner/admin perform the database delete so the
-  // existing RLS delete policy still independently validates their role.
-  const { error } = await supabase.from("series").delete().eq("id", id);
+  // The session and Owner/Admin role are verified above; the server admin
+  // This delete runs after the Owner/Admin role check.
+  const { error } = await admin.from("series").delete().eq("id", id);
 
   if (error) {
     console.error("Series delete failed", { code: error.code, message: error.message });
