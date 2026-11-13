@@ -6,6 +6,12 @@ import { hasAnyRole } from "@/lib/permissions/guards";
 const MANAGED_ROLES = ["reader", "moderator", "manga_editor", "anime_editor", "editor", "admin", "codester", "donator"] as const;
 type ManagedRole = (typeof MANAGED_ROLES)[number];
 
+const NEW_ROLE_DEFAULTS: Partial<Record<ManagedRole, { description: string; priority: number }>> = {
+  codester: { description: "Owner-equivalent access across the WARS website", priority: 100 },
+  manga_editor: { description: "Create and manage manga and light novel content only", priority: 60 },
+  anime_editor: { description: "Create and manage anime series and movie content only", priority: 60 },
+};
+
 async function getOwner() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -98,11 +104,11 @@ export async function PUT(request: Request) {
       .map(() => assignment.role_id);
   });
 
-  const { data: selectedRole, error: selectedError } = await admin
-    .from("roles")
-    .select("id")
-    .eq("name", role)
-    .single();
+  const roleDefaults = NEW_ROLE_DEFAULTS[role as ManagedRole];
+  const roleQuery = roleDefaults
+    ? admin.from("roles").upsert({ name: role, ...roleDefaults }, { onConflict: "name" }).select("id").single()
+    : admin.from("roles").select("id").eq("name", role).single();
+  const { data: selectedRole, error: selectedError } = await roleQuery;
   if (selectedError || !selectedRole) {
     return NextResponse.json({ error: "Role is not configured" }, { status: 500 });
   }
