@@ -7,15 +7,17 @@ const roleStyles: Record<string, string> = {
   admin: "border-red-400/50 bg-red-500/10 text-red-300",
   moderator: "border-yellow-300/50 bg-yellow-400/10 text-yellow-200",
   donator: "border-rose-400/70 bg-rose-500/10 text-rose-200 shadow-[0_0_12px_rgba(244,63,94,0.3)]",
+  pre_member: "border-indigo-300/60 bg-gradient-to-r from-indigo-500/15 via-cyan-300/10 to-fuchsia-400/15 text-indigo-100 shadow-[0_0_12px_rgba(129,140,248,0.3)]",
   reader: "border-white/30 bg-white/5 text-white",
 };
 
 export function RoleBadge({ role }: { role: string }) {
   const normalized = role.toLowerCase();
-  const glitter = ["owner", "codester", "donator"].includes(normalized);
+  const glitter = ["owner", "codester", "donator", "pre_member"].includes(normalized);
   const label = normalized === "moderator" ? "Chat/Room Mod"
     : normalized === "manga_editor" ? "Manga Editor"
       : normalized === "anime_editor" ? "Anime Editor"
+        : normalized === "pre_member" ? "Pre-Member"
         : role;
 
   return (

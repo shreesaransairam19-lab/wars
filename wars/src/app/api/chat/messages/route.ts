@@ -123,7 +123,7 @@ export async function GET(request: Request) {
       rolesByUser.set(assignment.user_id, [...current, ...roleRowsForUser.map((role) => role.name)]);
     }
   }
-  const rolePriority = ["owner", "codester", "admin", "editor", "manga_editor", "anime_editor", "moderator", "donator", "reader"];
+  const rolePriority = ["owner", "codester", "admin", "editor", "manga_editor", "anime_editor", "moderator", "donator", "pre_member", "reader"];
   const messagesWithRoles = messages.map((message) => {
     const roles = rolesByUser.get(message.sender_id) ?? ["reader"];
     const primaryRole = rolePriority.find((role) => roles.includes(role)) ?? "reader";

@@ -8,6 +8,7 @@ export type RoleName =
   | "manga_editor"
   | "anime_editor"
   | "moderator"
+  | "pre_member"
   | "reader"
   | "donator";
 
@@ -19,6 +20,7 @@ const ROLE_HIERARCHY: Record<RoleName, number> = {
   manga_editor: 60,
   anime_editor: 60,
   moderator: 40,
+  pre_member: 20,
   reader: 20,
   donator: 10,
 };

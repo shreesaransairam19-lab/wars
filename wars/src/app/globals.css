@@ -94,6 +94,7 @@ body {
 .role-badge-glitter--owner { --name-glow: rgba(34, 211, 238, .9); }
 .role-badge-glitter--codester { --name-glow: rgba(251, 191, 36, .92); }
 .role-badge-glitter--donator { --name-glow: rgba(244, 63, 94, .9); }
+.role-badge-glitter--pre_member { --name-glow: rgba(165, 180, 252, .95); }
 
 .role-badge-glitter-text {
   color: transparent;
@@ -134,6 +135,10 @@ body {
   background-image: linear-gradient(105deg, #fde68a 0%, #fff7cc 25%, #f59e0b 48%, #fff7cc 58%, #fbbf24 78%, #fde68a 100%);
 }
 
+.role-badge-glitter-text--pre_member {
+  background-image: linear-gradient(105deg, #a5f3fc 0%, #ffffff 18%, #a5b4fc 37%, #f5d0fe 53%, #99f6e4 72%, #ffffff 84%, #a5f3fc 100%);
+}
+
 .role-name-glitter {
   color: transparent;
   background-size: 240% 100%;
@@ -153,6 +158,11 @@ body {
 
 .role-name-glitter--codester {
   background-image: linear-gradient(105deg, #fde68a 0%, #fff7cc 24%, #f59e0b 42%, #ffffff 50%, #fbbf24 68%, #fff7cc 78%, #fde68a 100%);
+}
+
+.role-name-glitter--pre-member {
+  --name-glow: rgba(165, 180, 252, .95);
+  background-image: linear-gradient(105deg, #a5f3fc 0%, #ffffff 18%, #a5b4fc 37%, #f5d0fe 53%, #99f6e4 72%, #ffffff 84%, #a5f3fc 100%);
 }
 
 .role-name-flame { animation: role-flame 1.6s ease-in-out infinite alternate; }

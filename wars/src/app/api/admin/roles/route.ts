@@ -3,13 +3,14 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { hasAnyRole } from "@/lib/permissions/guards";
 
-const MANAGED_ROLES = ["reader", "moderator", "manga_editor", "anime_editor", "editor", "admin", "codester", "donator"] as const;
+const MANAGED_ROLES = ["reader", "pre_member", "moderator", "manga_editor", "anime_editor", "editor", "admin", "codester", "donator"] as const;
 type ManagedRole = (typeof MANAGED_ROLES)[number];
 
 const NEW_ROLE_DEFAULTS: Partial<Record<ManagedRole, { description: string; priority: number }>> = {
   codester: { description: "Owner-equivalent access across the WARS website", priority: 100 },
   manga_editor: { description: "Create and manage manga and light novel content only", priority: 60 },
   anime_editor: { description: "Create and manage anime series and movie content only", priority: 60 },
+  pre_member: { description: "Pre-member community status with reader-level access", priority: 20 },
 };
 
 async function getOwner() {

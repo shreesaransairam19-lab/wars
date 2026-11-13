@@ -7,10 +7,11 @@ const roleNameStyles: Record<string, string> = {
   admin: "text-red-300",
   moderator: "text-yellow-200",
   donator: "role-name-glitter role-name-glitter--donator",
+  pre_member: "role-name-glitter role-name-glitter--pre-member",
   reader: "text-white",
 };
 
-const rolePriority = ["owner", "codester", "admin", "editor", "manga_editor", "anime_editor", "moderator", "donator", "reader"];
+const rolePriority = ["owner", "codester", "admin", "editor", "manga_editor", "anime_editor", "moderator", "donator", "pre_member", "reader"];
 
 export function getPrimaryRole(roles: readonly string[]): string | null {
   const normalized = roles.map((role) => role.trim().toLowerCase());

@@ -13,7 +13,7 @@ type Member = {
   roles: string[];
 };
 
-const assignableRoles = ["reader", "moderator", "manga_editor", "anime_editor", "editor", "admin", "codester", "donator"] as const;
+const assignableRoles = ["reader", "pre_member", "moderator", "manga_editor", "anime_editor", "editor", "admin", "codester", "donator"] as const;
 type AssignableRole = (typeof assignableRoles)[number];
 
 export default function AdminRolesPage() {
@@ -148,7 +148,7 @@ export default function AdminRolesPage() {
                           disabled={protectedOwner}
                           className="rounded-lg border border-line bg-background px-3 py-2 text-sm"
                         >
-                          {assignableRoles.map((role) => <option key={role} value={role}>{role === "manga_editor" ? "Manga Editor" : role === "anime_editor" ? "Anime Editor" : role[0].toUpperCase() + role.slice(1)}</option>)}
+                          {assignableRoles.map((role) => <option key={role} value={role}>{role === "manga_editor" ? "Manga Editor" : role === "anime_editor" ? "Anime Editor" : role === "pre_member" ? "Pre-Member" : role[0].toUpperCase() + role.slice(1)}</option>)}
                         </select>
                         <button
                           type="button"
