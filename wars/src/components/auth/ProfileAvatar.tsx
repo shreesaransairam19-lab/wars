@@ -39,7 +39,9 @@ export function ProfileAvatar({
       ? "profile-avatar-frame--owner"
       : normalizedRole === "donator"
         ? "profile-avatar-frame--donator"
-        : "";
+        : normalizedRole === "admin"
+          ? "profile-avatar-frame--admin"
+          : "";
 
   useEffect(() => {
     setImageFailed(false);
@@ -184,6 +186,17 @@ export function ProfileAvatar({
           height={size}
           unoptimized
           className="profile-avatar-level-100-wings__overlay"
+        />
+      )}
+      {!storeFrame && normalizedRole === "admin" && (
+        <Image
+          src="/profile-frames/admin-role.gif"
+          alt=""
+          aria-hidden="true"
+          width={size}
+          height={size}
+          unoptimized
+          className="profile-avatar-admin__overlay"
         />
       )}
     </div>
