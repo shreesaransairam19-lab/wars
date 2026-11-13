@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getLevelProgress, getRank, XP_REWARDS } from "@/lib/xp/calculate";
+import { getUserRoles } from "@/lib/permissions/guards";
+import { getLevelProgress, getRank, getXpForLevel, XP_REWARDS } from "@/lib/xp/calculate";
 
 const XP_PAGE_SIZE = 1000;
 
@@ -41,7 +42,7 @@ export async function GET() {
   // The session verifies identity; use the server client for consistent,
   // user-scoped aggregates even when production RLS policies differ.
   const admin = createAdminClient();
-  const [xpResult, progressResult, reviewResult, chatResult] = await Promise.all([
+  const [xpResult, progressResult, reviewResult, chatResult, roles] = await Promise.all([
     getUserXpRows(admin, user.id),
     admin
       .from("reading_progress")
@@ -58,6 +59,7 @@ export async function GET() {
       .select("id", { count: "exact", head: true })
       .eq("sender_id", user.id)
       .eq("is_deleted", false),
+    getUserRoles(user.id),
   ]);
 
   if (xpResult.error || progressResult.error || reviewResult.error || chatResult.error) {
@@ -83,7 +85,11 @@ export async function GET() {
     .filter((row) => row.reason === "read_chapter")
     .reduce((sum, row) => sum + (row.amount ?? 0), 0);
   const readXp = Math.max(recordedReadXp, chaptersRead * XP_REWARDS.read_chapter);
-  const totalXp = otherLedgerXp + readXp;
+  const earnedXp = otherLedgerXp + readXp;
+  // Founder perk: Owner accounts start at the level cap without altering earned XP records.
+  const totalXp = roles.includes("owner")
+    ? Math.max(earnedXp, getXpForLevel(100))
+    : earnedXp;
   const levelInfo = getLevelProgress(totalXp);
   const rank = getRank(levelInfo.currentLevel);
 
