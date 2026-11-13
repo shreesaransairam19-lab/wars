@@ -33,11 +33,11 @@ export function ProfileAvatar({
   );
   const normalizedRole = role?.trim().toLowerCase();
   const storeFrame = getProfileFrame(frameId);
-  const isLevel100WingsFrame = storeFrame?.id === "level-100-wings";
+  const illustratedFrameSrc = storeFrame && "imageSrc" in storeFrame ? storeFrame.imageSrc : null;
   const isOwnerRoleFrame = !storeFrame && normalizedRole === "owner";
-  const usesExpandedIllustratedFrame = isLevel100WingsFrame || isOwnerRoleFrame;
+  const usesExpandedIllustratedFrame = Boolean(illustratedFrameSrc) || isOwnerRoleFrame;
   const frameClass = storeFrame
-    ? `profile-avatar-frame--${storeFrame.id}`
+    ? `profile-avatar-frame--${storeFrame.id}${illustratedFrameSrc ? " profile-avatar-frame--illustrated" : ""}`
     : normalizedRole === "owner"
       ? "profile-avatar-frame--owner"
       : normalizedRole === "donator"
@@ -180,17 +180,18 @@ export function ProfileAvatar({
           </g>
         </svg>
       )}
-      {storeFrame?.id === "level-100-wings" && (
+      {illustratedFrameSrc && (
         <Image
-          src="/profile-frames/level-100-wings.png"
+          src={illustratedFrameSrc}
           alt=""
           aria-hidden="true"
           width={size}
           height={size}
           unoptimized
-          className="profile-avatar-level-100-wings__overlay"
+          className="profile-avatar-illustrated__overlay"
         />
       )}
+
       {!storeFrame && normalizedRole === "owner" && (
         <Image
           src="/profile-frames/owner-role.gif"

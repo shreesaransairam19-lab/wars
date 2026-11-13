@@ -233,12 +233,17 @@ body {
   background: transparent;
 }
 
+.profile-avatar-frame--illustrated,
 .profile-avatar-frame--level-100-wings {
   padding: 0;
   background: transparent;
 }
 
-.profile-avatar-frame--level-100-wings .profile-avatar-frame__portrait,
+.profile-avatar-frame--illustrated .profile-avatar-frame__portrait {
+  width: 44%;
+  height: 44%;
+}
+
 .profile-avatar-frame--owner .profile-avatar-frame__portrait {
   width: 44%;
   height: 44%;
@@ -306,7 +311,7 @@ body {
   pointer-events: none;
 }
 
-.profile-avatar-level-100-wings__overlay {
+.profile-avatar-illustrated__overlay {
   position: absolute;
   z-index: 3;
   inset: 0;
@@ -315,7 +320,7 @@ body {
   max-width: none;
   max-height: none;
   object-fit: contain;
-  filter: drop-shadow(0 0 3px rgba(255, 193, 49, .68));
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, .25));
   pointer-events: none;
 }
 
