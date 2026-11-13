@@ -163,6 +163,8 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
     }
     let cancelled = false;
     let loadingMessages = false;
+    let rateLimitedUntil = 0;
+    let retryTimer: number | null = null;
     setMessages([]);
     setLoading(true);
     setError("");
@@ -225,14 +227,26 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
     setDmConnected(false);
 
     async function load() {
-      if (cancelled || loadingMessages || document.visibilityState === "hidden") return;
+      if (cancelled || loadingMessages || document.visibilityState === "hidden" || Date.now() < rateLimitedUntil) return;
       loadingMessages = true;
       try {
         const res = await fetch(`/api/chat/messages?room_id=${activeRoom}`, { cache: "no-store" });
         if (!res.ok) {
           const json = await res.json().catch(() => ({}));
-          if (!cancelled) setError(json.error ?? "Could not load chat messages");
+          if (res.status === 429) {
+            const retryAfter = Math.max(1, Math.min(60, Number(res.headers.get("Retry-After")) || 5));
+            rateLimitedUntil = Date.now() + retryAfter * 1000;
+            if (!cancelled) setError(`${json.error ?? "Chat is refreshing too often."} Retrying in ${retryAfter}s.`);
+            if (retryTimer !== null) window.clearTimeout(retryTimer);
+            retryTimer = window.setTimeout(() => {
+              retryTimer = null;
+              void load();
+            }, retryAfter * 1000);
+          } else if (!cancelled) {
+            setError(json.error ?? "Could not load chat messages");
+          }
         } else {
+          rateLimitedUntil = 0;
           const json = await res.json();
           if (!cancelled) {
             const incoming = (json.messages ?? []) as Message[];
@@ -289,6 +303,7 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
 
     return () => {
       cancelled = true;
+      if (retryTimer !== null) window.clearTimeout(retryTimer);
       stopFallbackPolling();
       document.removeEventListener("visibilitychange", refreshWhenVisible);
       if (supabase && channel) void supabase.removeChannel(channel);

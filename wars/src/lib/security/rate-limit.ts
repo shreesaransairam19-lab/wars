@@ -58,6 +58,7 @@ export const RATE_LIMITS = {
   login: { max: 5, windowMs: 60_000 },
   register: { max: 3, windowMs: 60_000 },
   chat: { max: 10, windowMs: 30_000 },
+  chatRead: { max: 30, windowMs: 60_000 },
   review: { max: 5, windowMs: 300_000 },
   report: { max: 5, windowMs: 300_000 },
   upload: { max: 5, windowMs: 60_000 },

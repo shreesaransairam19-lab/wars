@@ -28,6 +28,18 @@ export async function GET(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const readLimit = checkRateLimit(
+    `chat-read:${user.id}:${getClientIp(request)}`,
+    RATE_LIMITS.chatRead.max,
+    RATE_LIMITS.chatRead.windowMs
+  );
+  if (!readLimit.allowed) {
+    const retryAfter = Math.max(1, Math.ceil((readLimit.resetAt - Date.now()) / 1000));
+    return NextResponse.json(
+      { error: "Chat is refreshing too often. Please wait a moment." },
+      { status: 429, headers: { "Retry-After": String(retryAfter), "Cache-Control": "private, no-store" } }
+    );
+  }
   const url = new URL(request.url);
   const roomId = url.searchParams.get("room_id");
   const before = url.searchParams.get("before");
@@ -160,7 +172,11 @@ export async function POST(request: Request) {
     RATE_LIMITS.chat.windowMs
   );
   if (!limit.allowed) {
-    return NextResponse.json({ error: "Slow down a little." }, { status: 429 });
+    const retryAfter = Math.max(1, Math.ceil((limit.resetAt - Date.now()) / 1000));
+    return NextResponse.json(
+      { error: "Slow down a little." },
+      { status: 429, headers: { "Retry-After": String(retryAfter), "Cache-Control": "private, no-store" } }
+    );
   }
 
   const parsed = chatMessageSchema.safeParse(await request.json());
