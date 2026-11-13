@@ -254,6 +254,10 @@ body {
   height: 44%;
 }
 
+.profile-avatar-frame--shadow-cat-ears .profile-avatar-illustrated__overlay {
+  transform: translateY(-14%);
+}
+
 .profile-avatar-frame--owner .profile-avatar-frame__portrait {
   width: 44%;
   height: 44%;
