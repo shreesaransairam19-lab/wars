@@ -265,6 +265,8 @@ body {
   inset: -40%;
   width: 180%;
   height: 180%;
+  max-width: none;
+  max-height: none;
   object-fit: contain;
   mix-blend-mode: screen;
   filter: drop-shadow(0 0 3px rgba(255, 193, 49, .68));
