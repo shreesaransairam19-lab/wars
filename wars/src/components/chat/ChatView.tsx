@@ -6,7 +6,7 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
 import { RoleName } from "@/components/auth/RoleName";
 import { RoleBadge } from "@/components/auth/RoleBadge";
 import { ProfileAvatar } from "@/components/auth/ProfileAvatar";
-import { Send, ImagePlay } from "lucide-react";
+import { Send, ImagePlay, Smile } from "lucide-react";
 import Image from "next/image";
 import giphyPoweredBy from "@/assets/giphy-powered-by.svg";
 
@@ -17,6 +17,19 @@ export interface Room {
   room_type: "server" | "channel" | "dm";
   parent_room_id: string | null;
   peer_id?: string | null;
+}
+
+const CHAT_EMOJIS = ["😀", "😄", "😂", "🥹", "😍", "😎", "🤔", "😭", "😅", "😊", "🙂", "🙃", "😉", "😴", "😮", "🤯", "🥳", "😤", "❤️", "💜", "💙", "✨", "🔥", "⚡", "🎉", "👏", "👍", "👎", "🙏", "🤝", "💀", "🍿", "🌸", "🗿"];
+
+function isGeneralServer(room: Room) {
+  return room.room_type === "server" && room.slug === "general-chat";
+}
+
+function isGeneralChannel(room: Room, generalServerId?: string) {
+  return room.room_type === "channel" && (
+    room.slug === "general-chat-general" ||
+    (Boolean(generalServerId) && room.parent_room_id === generalServerId && room.name.trim().toLowerCase() === "general")
+  );
 }
 
 interface Message {
@@ -119,8 +132,13 @@ function mergeDmMessage(messages: Message[], message: Message) {
 
 export function ChatView({ rooms, roomsError, currentUserId, canManageCommunities }: { rooms: Room[]; roomsError?: string; currentUserId: string; canManageCommunities: boolean }) {
   const [roomList, setRoomList] = useState(rooms);
-  const channels = roomList.filter((r) => r.room_type === "channel");
-  const servers = roomList.filter((r) => r.room_type === "server");
+  const servers = roomList
+    .filter((r) => r.room_type === "server")
+    .sort((a, b) => Number(!isGeneralServer(a)) - Number(!isGeneralServer(b)) || a.name.localeCompare(b.name));
+  const generalServerId = servers.find(isGeneralServer)?.id;
+  const channels = roomList
+    .filter((r) => r.room_type === "channel")
+    .sort((a, b) => Number(!isGeneralChannel(a, generalServerId)) - Number(!isGeneralChannel(b, generalServerId)) || a.name.localeCompare(b.name));
   const [dms, setDms] = useState<Room[]>([]);
   const [activeServer, setActiveServer] = useState(servers[0]?.id ?? "");
   const [activeRoom, setActiveRoom] = useState(
@@ -136,11 +154,13 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
   const [roomName, setRoomName] = useState("");
   const [updatingRooms, setUpdatingRooms] = useState(false);
   const [gifOpen, setGifOpen] = useState(false);
+  const [emojiOpen, setEmojiOpen] = useState(false);
   const [gifQuery, setGifQuery] = useState("");
   const [gifs, setGifs] = useState<Gif[]>([]);
   const [gifError, setGifError] = useState("");
   const [gifLoading, setGifLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const messageInputRef = useRef<HTMLInputElement>(null);
   const dmChannelRef = useRef<RealtimeChannel | null>(null);
   const pendingMessagesRef = useRef(new Map<string, { roomId: string; message: Message }>());
   const [dmConnected, setDmConnected] = useState(false);
@@ -607,6 +627,20 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
     if (first) setActiveRoom(first.id);
   }
 
+  function insertEmoji(emoji: string) {
+    const inputElement = messageInputRef.current;
+    const start = inputElement?.selectionStart ?? input.length;
+    const end = inputElement?.selectionEnd ?? start;
+    setInput((current) => current.slice(0, start) + emoji + current.slice(end));
+    setEmojiOpen(false);
+    window.requestAnimationFrame(() => {
+      if (!inputElement) return;
+      const cursor = start + emoji.length;
+      inputElement.focus();
+      inputElement.setSelectionRange(cursor, cursor);
+    });
+  }
+
   return (
     <div className="flex h-[calc(100vh-64px)]">
       {/* Servers */}
@@ -774,6 +808,18 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
           <div ref={bottomRef} />
         </div>
 
+        {emojiOpen && (
+          <div className="border-t border-line bg-panel p-3" aria-label="Emoji picker">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted">Choose an emoji</p>
+            <div className="grid grid-cols-8 gap-1 sm:grid-cols-12">
+              {CHAT_EMOJIS.map((emoji) => (
+                <button key={emoji} type="button" onClick={() => insertEmoji(emoji)} className="rounded-md p-1.5 text-lg transition-colors hover:bg-panel2 focus:bg-panel2" aria-label={`Add ${emoji}`}>
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         {gifOpen && (
           <div className="border-t border-line bg-panel p-3">
             <div className="flex gap-2">
@@ -852,6 +898,7 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
               type="button"
               onClick={() => {
                 setGifOpen((v) => !v);
+                setEmojiOpen(false);
                 if (!gifOpen && gifs.length === 0) void searchGifs("");
               }}
               className="grid h-9 w-9 place-items-center rounded-lg border border-line text-muted hover:text-foreground"
@@ -861,6 +908,7 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
               <ImagePlay className="h-4 w-4" />
             </button>
             <input
+              ref={messageInputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               maxLength={4000}
@@ -869,6 +917,18 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
               disabled={!activeRoom || (activeRoomData?.room_type === "dm" && !dmConnected)}
               className="flex-1 rounded-lg border border-line bg-panel2 px-3 py-2 text-sm outline-none focus:border-accent"
             />
+            <button
+              type="button"
+              onClick={() => {
+                setEmojiOpen((open) => !open);
+                setGifOpen(false);
+              }}
+              className="grid h-9 w-9 place-items-center rounded-lg border border-line text-muted hover:text-foreground"
+              aria-label="Toggle emoji picker"
+              aria-expanded={emojiOpen}
+            >
+              <Smile className="h-4 w-4" />
+            </button>
             <button
               type="submit"
               disabled={!input.trim() || !activeRoom || (activeRoomData?.room_type === "dm" && (!dmConnected || !dmPeerOnline))}
