@@ -116,3 +116,34 @@ export function generateStoragePath(
   const uniqueId = id ?? crypto.randomUUID();
   return `${prefix}/${uniqueId}.${extension.replace(".", "")}`;
 }
+
+const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm"] as const;
+const VIDEO_MIME_BY_EXTENSION: Record<string, (typeof ALLOWED_VIDEO_TYPES)[number]> = {
+  ".mp4": "video/mp4",
+  ".webm": "video/webm",
+};
+export const MAX_VIDEO_SIZE = 100 * 1024 * 1024;
+
+export function validateVideoFile(file: {
+  name: string;
+  type: string;
+  size: number;
+}): FileValidationResult {
+  const ext = file.name.toLowerCase().slice(file.name.lastIndexOf("."));
+  const expectedType = VIDEO_MIME_BY_EXTENSION[ext];
+
+  if (!expectedType) {
+    return { valid: false, error: "Choose an MP4 or WebM video" };
+  }
+  if (file.type && (!ALLOWED_VIDEO_TYPES.includes(file.type as (typeof ALLOWED_VIDEO_TYPES)[number]) || file.type !== expectedType)) {
+    return { valid: false, error: `Invalid video type: ${file.type}` };
+  }
+  if (!Number.isFinite(file.size) || file.size <= 0) {
+    return { valid: false, error: "Video file is empty or invalid" };
+  }
+  if (file.size > MAX_VIDEO_SIZE) {
+    return { valid: false, error: "Video must be 100 MB or smaller" };
+  }
+
+  return { valid: true };
+}

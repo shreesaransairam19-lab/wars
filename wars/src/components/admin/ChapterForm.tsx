@@ -6,10 +6,11 @@ import { Plus } from "lucide-react";
 interface ChapterFormProps {
   seriesId: string;
   nextChapterNumber: number;
+  itemLabel?: "Chapter" | "Episode";
   onCreated?: () => void;
 }
 
-export function ChapterForm({ seriesId, nextChapterNumber, onCreated }: ChapterFormProps) {
+export function ChapterForm({ seriesId, nextChapterNumber, itemLabel = "Chapter", onCreated }: ChapterFormProps) {
   const [title, setTitle] = useState("");
   const [chapterNumber, setChapterNumber] = useState(nextChapterNumber);
   const [submitting, setSubmitting] = useState(false);
@@ -37,8 +38,8 @@ export function ChapterForm({ seriesId, nextChapterNumber, onCreated }: ChapterF
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           series_id: seriesId,
-          title: title || `Chapter ${chapterNumber}`,
-          slug: autoSlug(title || `chapter-${chapterNumber}`),
+          title: title || `${itemLabel} ${chapterNumber}`,
+          slug: autoSlug(title || `${itemLabel}-${chapterNumber}`),
           chapter_number: chapterNumber,
         }),
       });
@@ -75,13 +76,13 @@ export function ChapterForm({ seriesId, nextChapterNumber, onCreated }: ChapterF
       )}
       {success && (
         <div className="mb-2 rounded-lg border border-[#39452b] bg-[#22291c] px-3 py-1.5 text-[10px] text-accent">
-          Chapter created!
+          {itemLabel} created!
         </div>
       )}
 
       <div className="grid grid-cols-[70px_1fr_auto] gap-2">
         <div>
-          <label htmlFor="ch-num" className="sr-only">Chapter number</label>
+          <label htmlFor="ch-num" className="sr-only">{itemLabel} number</label>
           <input
             id="ch-num"
             type="number"
@@ -93,11 +94,11 @@ export function ChapterForm({ seriesId, nextChapterNumber, onCreated }: ChapterF
           />
         </div>
         <div>
-          <label htmlFor="ch-title" className="sr-only">Chapter title</label>
+          <label htmlFor="ch-title" className="sr-only">{itemLabel} title</label>
           <input
             id="ch-title"
             className="w-full rounded-lg border border-line bg-[#121217] px-2 py-1.5 text-[10px] text-foreground outline-none focus:border-accent"
-            placeholder="Chapter title (optional)"
+            placeholder={`${itemLabel} title (optional)`}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             maxLength={200}

@@ -11,17 +11,22 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "db:migrate": "npx supabase db push",
-    "db:seed": "supabase db seed"
+    "db:seed": "supabase db seed",
+    "build:cloudflare": "cross-env CLOUDFLARE_BUILD=1 opennextjs-cloudflare build",
+    "preview:cloudflare": "cross-env CLOUDFLARE_BUILD=1 opennextjs-cloudflare preview",
+    "deploy:cloudflare": "cross-env CLOUDFLARE_BUILD=1 opennextjs-cloudflare deploy",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^6.0.0",
+    "@opennextjs/cloudflare": "^1.20.17",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.118.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "epubjs": "^0.3.93",
     "lucide-react": "^1.60.0",
-    "next": "16.4.2",
+    "next": "16.4.5",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-hook-form": "^7.90.0",
@@ -36,16 +41,18 @@
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.8",
-    "@types/node": "^20",
+    "@types/node": "^24.19.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.1.2",
+    "cross-env": "^10.1.0",
     "eslint": "^9",
-    "eslint-config-next": "16.4.2",
+    "eslint-config-next": "16.4.5",
     "jsdom": "^30.1.3",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vite": "^8.3.4",
-    "vitest": "^5.0.5"
+    "vitest": "^5.0.5",
+    "wrangler": "^4.162.0"
   }
 }

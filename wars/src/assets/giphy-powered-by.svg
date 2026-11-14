@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="21" viewBox="0 0 100 21">
+  <title>Powered by GIPHY</title>
+  <text x="1" y="14" fill="#8b8b94" font-family="Arial, sans-serif" font-size="9">Powered by</text>
+  <text x="52" y="15" fill="#fff" font-family="Arial Black, Arial, sans-serif" font-size="10" font-weight="900">GIPHY</text>
+  <rect x="51" y="1" width="9" height="3" fill="#00ccff" />
+  <rect x="60" y="1" width="9" height="3" fill="#9933ff" />
+  <rect x="69" y="1" width="9" height="3" fill="#ff6666" />
+  <rect x="78" y="1" width="9" height="3" fill="#fff35c" />
+</svg>

@@ -2,12 +2,12 @@
 
 import { useState, useCallback } from "react";
 import { Upload, Loader2 } from "lucide-react";
-import { validateDocumentFile, validateImageFile } from "@/lib/security/file-validation";
+import { validateDocumentFile, validateImageFile, validateVideoFile } from "@/lib/security/file-validation";
 import { createClient } from "@/lib/supabase/client";
 
 interface UploadPanelProps {
   chapterId: string;
-  assetType: "page" | "novel" | "document";
+  assetType: "page" | "novel" | "document" | "video";
   onPageUploaded?: () => void;
 }
 
@@ -27,7 +27,11 @@ export function UploadPanel({ chapterId, assetType, onPageUploaded }: UploadPane
       for (const file of Array.from(files)) {
         const meta = { name: file.name, type: file.type, size: file.size };
         const validation =
-          assetType !== "page" ? validateDocumentFile(meta) : validateImageFile(meta);
+          assetType === "video"
+            ? validateVideoFile(meta)
+            : assetType !== "page"
+            ? validateDocumentFile(meta)
+            : validateImageFile(meta);
 
         if (!validation.valid) {
           results.push(`✗ ${file.name}: ${validation.error}`);
@@ -36,6 +40,46 @@ export function UploadPanel({ chapterId, assetType, onPageUploaded }: UploadPane
         }
 
         try {
+          if (assetType === "video") {
+            const signedRes = await fetch("/api/upload/video", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chapter_id: chapterId,
+                name: file.name,
+                type: file.type,
+                size: file.size,
+              }),
+            });
+            const signed = await signedRes.json();
+            if (!signedRes.ok) throw new Error(signed.error ?? "Could not start video upload");
+
+            const { error: uploadError } = await createClient()
+              .storage.from(signed.bucket)
+              .uploadToSignedUrl(signed.path, signed.token, file, {
+                contentType: file.type || (file.name.toLowerCase().endsWith(".mp4") ? "video/mp4" : "video/webm"),
+                upsert: false,
+              });
+            if (uploadError) throw new Error(uploadError.message);
+
+            const completeRes = await fetch("/api/upload/video", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chapter_id: chapterId,
+                path: signed.path,
+                name: file.name,
+                type: file.type,
+                size: file.size,
+              }),
+            });
+            const complete = await completeRes.json();
+            if (!completeRes.ok) throw new Error(complete.error ?? "Could not attach video to episode");
+            results.push(`✓ ${file.name}`);
+            setProgress([...results]);
+            continue;
+          }
+
           if (assetType !== "page") {
             const signedRes = await fetch("/api/upload/novel", {
               method: "POST",
@@ -126,6 +170,8 @@ export function UploadPanel({ chapterId, assetType, onPageUploaded }: UploadPane
             ? "Upload EPUB or PDF"
             : assetType === "document"
             ? "Upload PDF document"
+            : assetType === "video"
+            ? "Upload MP4 or WebM video"
             : "Upload page images"}
         </span>
         <input
@@ -133,7 +179,7 @@ export function UploadPanel({ chapterId, assetType, onPageUploaded }: UploadPane
           type="file"
           className="hidden"
           multiple={assetType === "page"}
-          accept={assetType === "page" ? "image/jpeg,image/png,image/webp" : assetType === "document" ? ".pdf,application/pdf" : ".epub,.pdf,application/epub+zip,application/pdf"}
+          accept={assetType === "page" ? "image/jpeg,image/png,image/webp" : assetType === "video" ? ".mp4,.webm,video/mp4,video/webm" : assetType === "document" ? ".pdf,application/pdf" : ".epub,.pdf,application/epub+zip,application/pdf"}
           disabled={uploading}
           onChange={(e) => {
             if (e.target.files?.length) {

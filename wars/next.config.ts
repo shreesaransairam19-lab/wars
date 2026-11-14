@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
@@ -12,6 +13,7 @@ const nextConfig: NextConfig = {
     },
   },
   images: {
+    unoptimized: process.env.CLOUDFLARE_BUILD === "1",
     remotePatterns: [
       {
         protocol: "https",
@@ -28,3 +30,5 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
+initOpenNextCloudflareForDev();

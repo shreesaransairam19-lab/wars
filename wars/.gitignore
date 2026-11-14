@@ -49,3 +49,9 @@ next-env.d.ts
 
 # supabase local temp
 supabase/.temp/
+
+# Cloudflare Workers/OpenNext
+.open-next/
+.wrangler/
+.dev.vars
+cloudflare-env.d.ts

@@ -64,3 +64,15 @@ Vercel Hobby. Set every variable from `.env.example` in the project settings, po
 ## Status
 
 Current build/verification status and remaining blockers are tracked at the top of `../WARS_PLAN.md` (section 0.1).
+
+## Cloudflare Workers
+
+The Vercel build remains `npm run build` (`next build`). Cloudflare uses OpenNext separately:
+
+- `npm run build:cloudflare` builds the Worker bundle.
+- `npm run preview:cloudflare` runs the bundle locally in the Workers runtime.
+- `npm run deploy:cloudflare` deploys to the `warsstudio` Worker and its `workers.dev` URL.
+
+Set the values from `.env.example` in Cloudflare's build variables and Worker runtime variables/secrets. `NEXT_PUBLIC_*` values must exist during the build. Keep the Supabase service-role and Stripe secret keys as runtime secrets. Set `NEXT_PUBLIC_APP_URL` to the Cloudflare Worker URL for that deployment, and add the Worker URL to Supabase Auth's allowed redirect URLs. Cloudflare builds set image delivery to the original image URL to avoid requiring a paid image service.
+
+Vercel remains available on the existing production branch while this Cloudflare deployment is being verified. No DNS change is part of this branch.
