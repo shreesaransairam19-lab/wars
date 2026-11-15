@@ -427,12 +427,17 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
           return next;
         });
       } else {
+        const serverMessage = json.message as Message | undefined;
+        const confirmedMessage: Message = {
+          ...(serverMessage ?? optimisticMessage),
+          delivery: "sent",
+        };
         pendingMessagesRef.current.set(messageId, {
           roomId: activeRoom,
-          message: { ...optimisticMessage, delivery: "sent" },
+          message: confirmedMessage,
         });
         setMessages((current) => current.map((message) =>
-          message.id === messageId ? { ...message, delivery: "sent" } : message
+          message.id === messageId ? confirmedMessage : message
         ));
       }
     } catch {

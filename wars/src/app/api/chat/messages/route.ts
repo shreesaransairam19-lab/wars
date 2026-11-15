@@ -309,7 +309,7 @@ export async function POST(request: Request) {
       message_type: parsed.data.message_type,
       reply_to: parsed.data.reply_to ?? null,
     })
-    .select("id")
+    .select("id,created_at")
     .single();
 
   if (error || !message) {
@@ -342,5 +342,29 @@ export async function POST(request: Request) {
     });
   }
 
-  return NextResponse.json({ success: true, id: message.id }, { status: 201 });
+  const [{ data: profile }, role, { data: equippedFrame }] = await Promise.all([
+    admin.from("profiles").select("username,display_name,avatar_path").eq("id", user.id).maybeSingle(),
+    getUserHighestRole(user.id),
+    admin.from("profile_frame_equipped").select("frame_id").eq("user_id", user.id).maybeSingle(),
+  ]);
+
+  return NextResponse.json({
+    success: true,
+    id: message.id,
+    message: {
+      id: message.id,
+      content,
+      message_type: parsed.data.message_type,
+      created_at: message.created_at,
+      sender_id: user.id,
+      profiles: profile ? {
+        username: profile.username,
+        display_name: profile.display_name,
+        avatar_path: profile.avatar_path,
+        role: role ?? "reader",
+        frame_id: equippedFrame?.frame_id ?? null,
+      } : null,
+      message_reactions: [],
+    },
+  }, { status: 201 });
 }
