@@ -4,7 +4,12 @@ import { LoginForm } from "@/features/auth/LoginForm";
 
 export const metadata = { title: "Sign in — WARS" };
 
-export default function LoginPage() {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string | string[] }> }) {
+  const params = await searchParams;
+  const requestedPath = typeof params.next === "string" ? params.next : null;
+  const redirectTo = requestedPath?.startsWith("/") && !requestedPath.startsWith("//") && !requestedPath.includes("\\")
+    ? requestedPath
+    : "/dashboard";
   return (
     <>
       <TopBar />
@@ -20,7 +25,7 @@ export default function LoginPage() {
         </p>
 
         <div className="mt-8">
-          <LoginForm />
+          <LoginForm redirectTo={redirectTo} />
         </div>
 
         <p className="mt-6 text-center text-xs text-muted">

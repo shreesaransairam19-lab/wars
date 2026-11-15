@@ -9,7 +9,9 @@ export const metadata = {
   description: "Private messages for WARS readers and moderators.",
 };
 
-export default async function AniChatPage() {
+export default async function AniChatPage({ searchParams }: { searchParams: Promise<{ conversation?: string | string[] }> }) {
+  const params = await searchParams;
+  const initialConversationId = typeof params.conversation === "string" ? params.conversation : undefined;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -19,7 +21,7 @@ export default async function AniChatPage() {
   return (
     <>
       <TopBar />
-      <ChatView rooms={[]} currentUserId={user.id} canManageCommunities={false} privateMessagesOnly />
+      <ChatView rooms={[]} currentUserId={user.id} canManageCommunities={false} privateMessagesOnly initialConversationId={initialConversationId} />
     </>
   );
 }

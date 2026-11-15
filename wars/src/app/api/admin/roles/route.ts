@@ -73,13 +73,23 @@ export async function PUT(request: Request) {
   if (!body || typeof body !== "object") {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
-  const { userId, role } = body as { userId?: unknown; role?: unknown };
+  const { userId, roles: requestedRoles, role: legacyRole } = body as {
+    userId?: unknown;
+    roles?: unknown;
+    role?: unknown;
+  };
   if (typeof userId !== "string" || !/^[0-9a-f-]{36}$/i.test(userId)) {
     return NextResponse.json({ error: "Select a valid member" }, { status: 400 });
   }
-  if (typeof role !== "string" || !MANAGED_ROLES.includes(role as ManagedRole)) {
-    return NextResponse.json({ error: "That role cannot be assigned here" }, { status: 400 });
-  }
+  const selectedRoles = [...new Set(
+    Array.isArray(requestedRoles) ? requestedRoles : typeof legacyRole === "string" ? [legacyRole] : []
+  )] as string[];
+  if (
+    selectedRoles.length < 1 ||
+    selectedRoles.length > MANAGED_ROLES.length ||
+    selectedRoles.some((role) => typeof role !== "string" || !MANAGED_ROLES.includes(role as ManagedRole))
+  ) return NextResponse.json({ error: "Choose one or more valid roles" }, { status: 400 });
+  const validRoles = selectedRoles as ManagedRole[];
 
   const admin = createAdminClient();
   const { data: targetRoles, error: targetError } = await admin
@@ -97,35 +107,37 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Owner accounts cannot be changed on this page" }, { status: 400 });
   }
 
+  const selectedRoleIds = new Set<string>();
+  for (const role of validRoles) {
+    const roleDefaults = NEW_ROLE_DEFAULTS[role];
+    const roleQuery = roleDefaults
+      ? admin.from("roles").upsert({ name: role, ...roleDefaults }, { onConflict: "name" }).select("id").single()
+      : admin.from("roles").select("id").eq("name", role).single();
+    const { data: selectedRole, error: selectedError } = await roleQuery;
+    if (selectedError || !selectedRole) {
+      return NextResponse.json({ error: `Role ${role} is not configured` }, { status: 500 });
+    }
+    selectedRoleIds.add(selectedRole.id);
+    const { error: assignError } = await admin.from("user_roles").upsert({
+      user_id: userId,
+      role_id: selectedRole.id,
+      assigned_by: user.id,
+    }, { onConflict: "user_id,role_id", ignoreDuplicates: true });
+    if (assignError) return NextResponse.json({ error: "Could not assign all selected roles" }, { status: 500 });
+  }
+
   const currentRoleIds = (targetRoles ?? []).flatMap((assignment) => {
     const relation = assignment.roles;
     const related = Array.isArray(relation) ? relation : relation ? [relation] : [];
-    return related
-      .filter((item) => MANAGED_ROLES.includes(item.name.toLowerCase() as ManagedRole))
-      .map(() => assignment.role_id);
+    return related.some((item) => MANAGED_ROLES.includes(item.name.toLowerCase() as ManagedRole))
+      ? [assignment.role_id]
+      : [];
   });
-
-  const roleDefaults = NEW_ROLE_DEFAULTS[role as ManagedRole];
-  const roleQuery = roleDefaults
-    ? admin.from("roles").upsert({ name: role, ...roleDefaults }, { onConflict: "name" }).select("id").single()
-    : admin.from("roles").select("id").eq("name", role).single();
-  const { data: selectedRole, error: selectedError } = await roleQuery;
-  if (selectedError || !selectedRole) {
-    return NextResponse.json({ error: "Role is not configured" }, { status: 500 });
-  }
-
-  const { error: assignError } = await admin.from("user_roles").upsert({
-    user_id: userId,
-    role_id: selectedRole.id,
-    assigned_by: user.id,
-  }, { onConflict: "user_id,role_id", ignoreDuplicates: true });
-  if (assignError) return NextResponse.json({ error: "Could not assign member role" }, { status: 500 });
-
-  const obsoleteRoleIds = [...new Set(currentRoleIds)].filter((id) => id !== selectedRole.id);
+  const obsoleteRoleIds = [...new Set(currentRoleIds)].filter((id) => !selectedRoleIds.has(id));
   if (obsoleteRoleIds.length) {
     const { error: removeError } = await admin.from("user_roles").delete().eq("user_id", userId).in("role_id", obsoleteRoleIds);
-    if (removeError) return NextResponse.json({ error: "Role was assigned but the previous role could not be removed" }, { status: 500 });
+    if (removeError) return NextResponse.json({ error: "Selected roles were assigned but previous roles could not be removed" }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true, role });
+  return NextResponse.json({ success: true, roles: validRoles });
 }

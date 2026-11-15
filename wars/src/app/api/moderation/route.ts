@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getUserRoles, hasAnyRole, ROLE_HIERARCHY, type RoleName } from "@/lib/permissions/guards";
+import { getUserRoles, ROLE_HIERARCHY, type RoleName } from "@/lib/permissions/guards";
 
 const actionSchema = z.object({
   action: z.enum(["mute", "unmute", "ban", "unban", "review_appeal"]),
@@ -27,11 +27,12 @@ const actionSchema = z.object({
 async function signedInStaff() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { user: null, response: NextResponse.json({ error: "Sign in required" }, { status: 401 }) };
-  if (!(await hasAnyRole(user.id, ["owner", "admin", "moderator"]))) {
-    return { user: null, response: NextResponse.json({ error: "Moderator, Admin, or Owner permissions required" }, { status: 403 }) };
+  if (!user) return { user: null, roles: [] as RoleName[], response: NextResponse.json({ error: "Sign in required" }, { status: 401 }) };
+  const roles = await getUserRoles(user.id);
+  if (!roles.some((role) => role === "owner" || role === "codester" || role === "admin" || role === "moderator")) {
+    return { user: null, roles: [] as RoleName[], response: NextResponse.json({ error: "Staff permissions required" }, { status: 403 }) };
   }
-  return { user, response: null };
+  return { user, roles, response: null };
 }
 
 async function logAction(actorId: string | null, targetId: string, action: string, reason: string, expiresAt: string | null) {
@@ -48,11 +49,13 @@ async function logAction(actorId: string | null, targetId: string, action: strin
 }
 
 export async function GET() {
-  const { user, response } = await signedInStaff();
+  const { user, roles, response } = await signedInStaff();
   if (response) return response;
   if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
-  const isOwner = await hasAnyRole(user.id, ["owner"]);
-  const isAdmin = await hasAnyRole(user.id, ["admin"]);
+  const isOwner = roles.includes("owner");
+  const readOnlyCodester = roles.includes("codester") && !isOwner && !roles.includes("admin") && !roles.includes("moderator");
+  const isAdmin = roles.includes("admin") && !readOnlyCodester;
+  const isModerator = roles.includes("moderator") && !readOnlyCodester;
   const admin = createAdminClient();
 
   const [profilesResult, rolesResult, roomsResult, membershipsResult, bansResult, appealsResult, muteHistoryResult] = await Promise.all([
@@ -93,19 +96,22 @@ export async function GET() {
     })),
     rooms: roomsResult.data ?? [],
     appeals: appealsResult.data ?? [],
-    permissions: { canMute: isOwner || await hasAnyRole(user.id, ["moderator"]), canBan: isOwner || isAdmin, canReviewAppeals: isOwner || isAdmin },
+    permissions: { canMute: isOwner || isModerator, canBan: isOwner || isAdmin, canReviewAppeals: isOwner || isAdmin },
   }, { headers: { "Cache-Control": "private, no-store, max-age=0" } });
 }
 
 export async function POST(request: Request) {
-  const { user, response } = await signedInStaff();
+  const { user, roles: actorRoles, response } = await signedInStaff();
   if (response) return response;
   if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+  const isOwner = actorRoles.includes("owner");
+  const readOnlyCodester = actorRoles.includes("codester") && !isOwner && !actorRoles.includes("admin") && !actorRoles.includes("moderator");
+  if (readOnlyCodester) {
+    return NextResponse.json({ error: "Codester access is view-only for moderation" }, { status: 403 });
+  }
   const parsed = actionSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid action" }, { status: 400 });
   const body = parsed.data;
-  const actorRoles = await getUserRoles(user.id);
-  const isOwner = actorRoles.some((role) => role === "owner" || role === "codester");
   const isAdmin = actorRoles.includes("admin");
   const isModerator = actorRoles.includes("moderator");
   const admin = createAdminClient();

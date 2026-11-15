@@ -13,6 +13,7 @@ export default function AdminPage() {
   const canManageAnime = roles.some((role) => ["owner", "codester", "editor", "anime_editor"].includes(role));
   const canManageMembers = roles.some((role) => ["owner", "codester"].includes(role));
   const canModerate = roles.some((role) => ["owner", "codester", "admin", "moderator"].includes(role));
+  const moderationReadOnly = roles.includes("codester") && !roles.includes("owner") && !roles.includes("admin") && !roles.includes("moderator");
   const canReviewPayments = roles.some((role) => ["owner", "codester", "admin"].includes(role));
   const hasAdminSections = canManageManga || canManageAnime || canManageMembers || canModerate || canReviewPayments;
 
@@ -51,7 +52,7 @@ export default function AdminPage() {
             {canModerate && <Link className={cardClass} href="/admin/moderation">
               <MessageSquare className="h-5 w-5 text-yellow-200" />
               <h2 className="mt-4 font-heading text-base font-semibold">Moderation</h2>
-              <p className="mt-1 text-sm text-muted">Review reports, mutes, bans, appeals, and member feedback.</p>
+              <p className="mt-1 text-sm text-muted">{moderationReadOnly ? "View member moderation status; Codester access is read-only." : "Review member status and manage chat mutes, bans, and appeals."}</p>
             </Link>}
             {canReviewPayments && <Link className={cardClass} href="/admin/frames">
               <CreditCard className="h-5 w-5 text-rose-300" />

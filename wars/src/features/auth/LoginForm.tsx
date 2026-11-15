@@ -6,16 +6,16 @@ import { login, type AuthActionResult } from "@/features/auth/actions";
 
 const initialState: AuthActionResult = { success: false };
 
-export function LoginForm() {
+export function LoginForm({ redirectTo = "/dashboard" }: { redirectTo?: string }) {
   const router = useRouter();
   const [state, formAction, pending] = useActionState(login, initialState);
 
   useEffect(() => {
     if (state.success) {
-      router.push("/dashboard");
+      router.push(redirectTo);
       router.refresh();
     }
-  }, [state.success, router]);
+  }, [state.success, redirectTo, router]);
 
   return (
     <form action={formAction} className="flex flex-col gap-4">

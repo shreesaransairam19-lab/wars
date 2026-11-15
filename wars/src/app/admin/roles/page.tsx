@@ -20,7 +20,7 @@ export default function AdminRolesPage() {
   const { user, roles, loading: authLoading } = useAuth();
   const isOwner = roles.some((role) => ["owner", "codester"].includes(role));
   const [members, setMembers] = useState<Member[]>([]);
-  const [selections, setSelections] = useState<Record<string, AssignableRole>>({});
+  const [selections, setSelections] = useState<Record<string, AssignableRole[]>>({});
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
@@ -40,8 +40,8 @@ export default function AdminRolesPage() {
     setSelections((current) => {
       const next = { ...current };
       for (const member of nextMembers) {
-        const currentRole = assignableRoles.find((role) => member.roles.includes(role));
-        next[member.id] = currentRole ?? "reader";
+        const currentRoles = assignableRoles.filter((role) => member.roles.includes(role));
+        next[member.id] = currentRoles.length ? currentRoles : ["reader"];
       }
       return next;
     });
@@ -68,7 +68,7 @@ export default function AdminRolesPage() {
     const response = await fetch("/api/admin/roles", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: memberId, role: selections[memberId] ?? "reader" }),
+      body: JSON.stringify({ userId: memberId, roles: selections[memberId] ?? ["reader"] }),
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
@@ -77,7 +77,7 @@ export default function AdminRolesPage() {
       return;
     }
     await loadMembers();
-    setMessage("Member role updated.");
+    setMessage("Member roles updated.");
     setSaving(null);
   }
 
@@ -107,7 +107,7 @@ export default function AdminRolesPage() {
           <>
             <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-panel p-4">
               <div className="max-w-xl space-y-2 text-sm text-muted">
-                <p>Codester has site-wide editing access like Owner. Manga Editor manages manga and light novels; Anime Editor manages anime series and movies.</p>
+                <p>Assign multiple roles to one member. Codester has site-wide editing access like Owner, but moderation is view-only. Manga Editor manages manga and light novels; Anime Editor manages anime series and movies.</p>
                 <p>Direct UPI payments cannot be verified automatically. Assign Donator only after checking the member’s cumulative payment confirmations reach $50 USD equivalent.</p>
               </div>
               <input
@@ -139,17 +139,31 @@ export default function AdminRolesPage() {
                           {member.roles.map((role) => <RoleBadge key={role} role={role} />)}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <label className="sr-only" htmlFor={`role-${member.id}`}>Role for {member.username}</label>
-                        <select
-                          id={`role-${member.id}`}
-                          value={selections[member.id] ?? "reader"}
-                          onChange={(event) => setSelections((current) => ({ ...current, [member.id]: event.target.value as AssignableRole }))}
-                          disabled={protectedOwner}
-                          className="rounded-lg border border-line bg-background px-3 py-2 text-sm"
-                        >
-                          {assignableRoles.map((role) => <option key={role} value={role}>{role === "manga_editor" ? "Manga Editor" : role === "anime_editor" ? "Anime Editor" : role === "pre_member" ? "Pre-Member" : role[0].toUpperCase() + role.slice(1)}</option>)}
-                        </select>
+                      <div className="flex flex-1 flex-wrap items-center justify-end gap-3">
+                        <fieldset disabled={protectedOwner} className="flex max-w-2xl flex-wrap gap-x-3 gap-y-2 disabled:opacity-50">
+                          <legend className="sr-only">Roles for {member.username}</legend>
+                          {assignableRoles.map((role) => (
+                            <label key={role} className="inline-flex items-center gap-1.5 text-xs text-muted">
+                              <input
+                                type="checkbox"
+                                checked={(selections[member.id] ?? ["reader"]).includes(role)}
+                                onChange={(event) => {
+                                  const checked = event.currentTarget.checked;
+                                  setSelections((current) => {
+                                    const selected = current[member.id] ?? ["reader"];
+                                    const next = checked
+                                      ? [...new Set([...selected, role])]
+                                      : selected.filter((item) => item !== role);
+                                    if (next.length === 0) return current;
+                                    return { ...current, [member.id]: next };
+                                  });
+                                }}
+                                className="accent-lime-300"
+                              />
+                              {role === "manga_editor" ? "Manga Editor" : role === "anime_editor" ? "Anime Editor" : role === "pre_member" ? "Pre-Member" : role[0].toUpperCase() + role.slice(1)}
+                            </label>
+                          ))}
+                        </fieldset>
                         <button
                           type="button"
                           onClick={() => void saveRole(member.id)}

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { TopBar } from "@/components/layout/TopBar";
 import { ModerationPanel } from "@/components/admin/ModerationPanel";
 import { createClient } from "@/lib/supabase/server";
-import { hasAnyRole } from "@/lib/permissions/guards";
+import { getUserRoles } from "@/lib/permissions/guards";
 
 export default function ModerationPage() {
   return (
@@ -25,7 +25,9 @@ export default function ModerationPage() {
 async function ModerationContent() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const canModerate = Boolean(user && await hasAnyRole(user.id, ["owner", "admin", "moderator"]));
+  const roles = user ? await getUserRoles(user.id) : [];
+  const canView = roles.some((role) => role === "owner" || role === "codester" || role === "admin" || role === "moderator");
+  const readOnlyCodester = roles.includes("codester") && !roles.includes("owner") && !roles.includes("admin") && !roles.includes("moderator");
 
   return (
     <>
@@ -41,9 +43,14 @@ async function ModerationContent() {
         </div>
         {!user ? (
           <div className="mt-6 rounded-xl border border-line bg-panel p-6 text-center"><p className="font-semibold">Sign in required</p><Link href="/login" className="mt-2 inline-block text-sm text-accent">Sign in to continue</Link></div>
-        ) : !canModerate ? (
-          <div className="mt-6 rounded-xl border border-line bg-panel p-6 text-center"><p className="font-semibold">Moderator, Admin, or Owner access required</p></div>
-        ) : <ModerationPanel />}
+        ) : !canView ? (
+          <div className="mt-6 rounded-xl border border-line bg-panel p-6 text-center"><p className="font-semibold">Staff access required</p></div>
+        ) : (
+          <>
+            {readOnlyCodester && <p className="mt-6 rounded-xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm text-amber-100">Codester access is view-only here. Moderation actions are reserved for Owners, Admins, and Moderators.</p>}
+            <ModerationPanel />
+          </>
+        )}
       </main>
     </>
   );

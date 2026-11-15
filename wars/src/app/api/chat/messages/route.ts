@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getUserHighestRole, hasAnyRole } from "@/lib/permissions/guards";
+import { getUserRoles, hasAnyRole } from "@/lib/permissions/guards";
+import { getPrimaryRole } from "@/components/auth/RoleName";
 import { chatMessageSchema } from "@/lib/validation/chat";
 import { sanitizeChatMessage, containsHarmfulContent } from "@/lib/security/sanitize";
 import { containsProfanity, containsRacistSlur } from "@/lib/security/profanity";
@@ -135,14 +136,13 @@ export async function GET(request: Request) {
       rolesByUser.set(assignment.user_id, [...current, ...roleRowsForUser.map((role) => role.name)]);
     }
   }
-  const rolePriority = ["owner", "codester", "admin", "editor", "manga_editor", "anime_editor", "moderator", "donator", "pre_member", "reader"];
   const messagesWithRoles = messages.map((message) => {
     const roles = rolesByUser.get(message.sender_id) ?? ["reader"];
-    const primaryRole = rolePriority.find((role) => roles.includes(role)) ?? "reader";
+    const primaryRole = getPrimaryRole(roles) ?? "reader";
     return {
       ...message,
       profiles: message.profiles
-        ? { ...message.profiles, role: primaryRole, frame_id: equippedFramesByUser.get(message.sender_id) ?? null }
+        ? { ...message.profiles, role: primaryRole, roles, frame_id: equippedFramesByUser.get(message.sender_id) ?? null }
         : null,
     };
   });
@@ -272,11 +272,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Please use Feedback to contact Owner, Codester, Admin, or Editor accounts" }, { status: 403 });
     }
 
-    const [{ data: profile }, role, { data: equippedFrame }] = await Promise.all([
+    const [{ data: profile }, roles, { data: equippedFrame }] = await Promise.all([
       admin.from("profiles").select("username,display_name,avatar_path").eq("id", user.id).maybeSingle(),
-      getUserHighestRole(user.id),
+      getUserRoles(user.id),
       admin.from("profile_frame_equipped").select("frame_id").eq("user_id", user.id).maybeSingle(),
     ]);
+    const primaryRole = getPrimaryRole(roles) ?? "reader";
     const createdAt = new Date().toISOString();
     return NextResponse.json({
       success: true,
@@ -291,7 +292,8 @@ export async function POST(request: Request) {
           username: profile.username,
           display_name: profile.display_name,
           avatar_path: profile.avatar_path,
-          role: role ?? "reader",
+          role: primaryRole,
+          roles,
           frame_id: equippedFrame?.frame_id ?? null,
         } : null,
         message_reactions: [],
@@ -342,11 +344,12 @@ export async function POST(request: Request) {
     });
   }
 
-  const [{ data: profile }, role, { data: equippedFrame }] = await Promise.all([
+  const [{ data: profile }, roles, { data: equippedFrame }] = await Promise.all([
     admin.from("profiles").select("username,display_name,avatar_path").eq("id", user.id).maybeSingle(),
-    getUserHighestRole(user.id),
+    getUserRoles(user.id),
     admin.from("profile_frame_equipped").select("frame_id").eq("user_id", user.id).maybeSingle(),
   ]);
+  const primaryRole = getPrimaryRole(roles) ?? "reader";
 
   return NextResponse.json({
     success: true,
@@ -361,7 +364,8 @@ export async function POST(request: Request) {
         username: profile.username,
         display_name: profile.display_name,
         avatar_path: profile.avatar_path,
-        role: role ?? "reader",
+        role: primaryRole,
+        roles,
         frame_id: equippedFrame?.frame_id ?? null,
       } : null,
       message_reactions: [],

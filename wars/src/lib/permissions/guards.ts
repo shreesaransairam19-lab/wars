@@ -48,9 +48,11 @@ export async function hasRole(
   requiredRole: RoleName
 ): Promise<boolean> {
   const roles = await getUserRoles(userId);
+  if (requiredRole === "moderator") {
+    return roles.some((role) => role === "owner" || role === "admin" || role === "moderator");
+  }
   const minPriority = ROLE_HIERARCHY[requiredRole];
   return roles.some((role) => {
-    if (requiredRole === "moderator" && ["manga_editor", "anime_editor"].includes(role)) return false;
     return ROLE_HIERARCHY[role] >= minPriority;
   });
 }

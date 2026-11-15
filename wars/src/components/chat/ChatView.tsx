@@ -40,7 +40,7 @@ interface Message {
   message_type: string;
   created_at: string;
   sender_id: string;
-  profiles: { username: string; display_name?: string | null; avatar_path?: string | null; role?: string | null; frame_id?: string | null } | null;
+  profiles: { username: string; display_name?: string | null; avatar_path?: string | null; role?: string | null; roles?: string[]; frame_id?: string | null } | null;
   message_reactions?: { reaction: string; user_id: string }[];
   delivery?: "sending" | "sent";
 }
@@ -132,7 +132,7 @@ function mergeDmMessage(messages: Message[], message: Message) {
     .sort((a, b) => a.created_at.localeCompare(b.created_at));
 }
 
-export function ChatView({ rooms, roomsError, currentUserId, canManageCommunities, privateMessagesOnly = false }: { rooms: Room[]; roomsError?: string; currentUserId: string; canManageCommunities: boolean; privateMessagesOnly?: boolean }) {
+export function ChatView({ rooms, roomsError, currentUserId, canManageCommunities, privateMessagesOnly = false, initialConversationId }: { rooms: Room[]; roomsError?: string; currentUserId: string; canManageCommunities: boolean; privateMessagesOnly?: boolean; initialConversationId?: string }) {
   const [roomList, setRoomList] = useState(rooms);
   const servers = roomList
     .filter((r) => r.room_type === "server")
@@ -173,10 +173,18 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
   const activeRoomData = roomList.find((c) => c.id === activeRoom) ?? dms.find((c) => c.id === activeRoom);
   const activeRoomName = activeRoomData?.name ?? "";
   useEffect(() => {
+    let cancelled = false;
     void fetch("/api/chat/dms").then(async (res) => {
-      if (res.ok) setDms((await res.json()).conversations ?? []);
+      if (!res.ok) return;
+      const conversations = (await res.json()).conversations ?? [];
+      if (cancelled) return;
+      setDms(conversations);
+      if (initialConversationId && conversations.some((conversation: Room) => conversation.id === initialConversationId)) {
+        setActiveRoom(initialConversationId);
+      }
     });
-  }, []);
+    return () => { cancelled = true; };
+  }, [initialConversationId]);
 
   useEffect(() => {
     if (!activeRoom) {
@@ -192,6 +200,8 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
     setLoading(true);
     setError("");
     setSendError("");
+
+    if (privateMessagesOnly && !activeRoomData) return;
 
     if (activeRoomData?.room_type === "dm") {
       setMessages(readLocalDmMessages(currentUserId, activeRoom));
@@ -803,7 +813,12 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
                       </RoleName>
                     </>
                   )}
-                  {message.profiles?.role && <RoleBadge role={message.profiles.role} />}
+                  {(message.profiles?.roles?.length
+                    ? message.profiles.roles
+                    : message.profiles?.role
+                      ? [message.profiles.role]
+                      : []
+                  ).map((role) => <RoleBadge key={role} role={role} />)}
                   <time className="text-[10px] text-muted">
                     {new Date(message.created_at).toLocaleTimeString([], {
                       hour: "2-digit",

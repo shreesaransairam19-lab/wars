@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, BookOpen, MessageCircle, Star, Trophy, Users } from "lucide-react";
 import { TopBar } from "@/components/layout/TopBar";
 import { FollowButton } from "@/components/profile/FollowButton";
+import { MessageMemberButton } from "@/components/profile/MessageMemberButton";
 import { ProfileAvatar } from "@/components/auth/ProfileAvatar";
 import { RoleBadge } from "@/components/auth/RoleBadge";
 import { getPrimaryRole } from "@/components/auth/RoleName";
@@ -97,15 +98,23 @@ export default async function MemberDashboardPage({ params }: { params: Promise<
                 <div className="mt-2 flex flex-wrap gap-1.5">{roleNames.map((role) => <RoleBadge key={role} role={role} />)}</div>
               </div>
             </div>
-            <FollowButton
-              targetUserId={profile.id}
-              username={profile.username}
-              isSignedIn={Boolean(viewer)}
-              isOwnProfile={isOwnProfile}
-              initialFollowing={Boolean(ownFollowResult.data)}
-              initialFollowerCount={followerResult.count ?? 0}
-              available={followAvailable}
-            />
+            <div className="flex flex-wrap items-start gap-3">
+              <MessageMemberButton
+                username={profile.username}
+                canReceivePrivateMessages={!roleNames.some((role) => ["owner", "codester", "admin", "editor", "manga_editor", "anime_editor"].includes(role))}
+                isSignedIn={Boolean(viewer)}
+                isOwnProfile={isOwnProfile}
+              />
+              <FollowButton
+                targetUserId={profile.id}
+                username={profile.username}
+                isSignedIn={Boolean(viewer)}
+                isOwnProfile={isOwnProfile}
+                initialFollowing={Boolean(ownFollowResult.data)}
+                initialFollowerCount={followerResult.count ?? 0}
+                available={followAvailable}
+              />
+            </div>
           </div>
           {profile.bio && <p className="mt-6 max-w-3xl whitespace-pre-line text-sm leading-relaxed text-muted">{profile.bio}</p>}
         </section>
