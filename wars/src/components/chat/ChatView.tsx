@@ -7,6 +7,7 @@ import { RoleName } from "@/components/auth/RoleName";
 import { RoleBadge } from "@/components/auth/RoleBadge";
 import { ProfileAvatar } from "@/components/auth/ProfileAvatar";
 import { ArrowLeft, Send, ImagePlay, Smile } from "lucide-react";
+import Link from "next/link";
 import Image from "next/image";
 import giphyPoweredBy from "@/assets/giphy-powered-by.svg";
 
@@ -762,20 +763,41 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
             (message.message_reactions ?? []).forEach((r) =>
               grouped.set(r.reaction, (grouped.get(r.reaction) ?? 0) + 1)
             );
+            const username = message.profiles?.username;
+            const displayName = message.profiles?.display_name || username || "Reader";
+            const profileHref = username ? `/dashboard/${encodeURIComponent(username)}` : null;
             return (
               <div key={message.id} className="group">
                 <div className="flex flex-wrap items-center gap-2">
-                  <ProfileAvatar
-                    userId={message.sender_id}
-                    avatarPath={message.profiles?.avatar_path}
-                    name={message.profiles?.display_name || message.profiles?.username || "Reader"}
-                    role={message.profiles?.role}
-                    frameId={message.profiles?.frame_id}
-                    size={24}
-                  />
-                  <RoleName role={message.profiles?.role} className="role-name-glow text-[12px] font-semibold">
-                    {message.profiles?.display_name || message.profiles?.username || "reader"}
-                  </RoleName>
+                  {profileHref ? (
+                    <Link href={profileHref} aria-label={`Visit ${displayName}'s dashboard`} className="inline-flex items-center gap-2 rounded-md outline-none hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent">
+                      <ProfileAvatar
+                        userId={message.sender_id}
+                        avatarPath={message.profiles?.avatar_path}
+                        name={displayName}
+                        role={message.profiles?.role}
+                        frameId={message.profiles?.frame_id}
+                        size={24}
+                      />
+                      <RoleName role={message.profiles?.role} className="role-name-glow text-[12px] font-semibold">
+                        {displayName}
+                      </RoleName>
+                    </Link>
+                  ) : (
+                    <>
+                      <ProfileAvatar
+                        userId={message.sender_id}
+                        avatarPath={message.profiles?.avatar_path}
+                        name={displayName}
+                        role={message.profiles?.role}
+                        frameId={message.profiles?.frame_id}
+                        size={24}
+                      />
+                      <RoleName role={message.profiles?.role} className="role-name-glow text-[12px] font-semibold">
+                        {displayName}
+                      </RoleName>
+                    </>
+                  )}
                   {message.profiles?.role && <RoleBadge role={message.profiles.role} />}
                   <time className="text-[10px] text-muted">
                     {new Date(message.created_at).toLocaleTimeString([], {
