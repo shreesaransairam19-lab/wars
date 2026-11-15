@@ -66,7 +66,7 @@ export default function StoriesPage() {
         const result = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(result.error ?? "Could not publish Story.");
       }
-      setCaption(""); setFile(null); setNotice("Your Story is live for friends for 24 hours.");
+      setCaption(""); setFile(null); setNotice("Your Story is live on your profile for everyone to view for 24 hours.");
       await loadStories();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not publish Story.");
@@ -98,7 +98,7 @@ export default function StoriesPage() {
   const groups = [...grouped.entries()].sort(([a], [b]) => Number(b === user.id) - Number(a === user.id));
 
   return <><TopBar /><main className="mx-auto max-w-5xl px-4 py-8 md:px-6">
-    <header className="mb-7 flex flex-wrap items-end justify-between gap-3"><div><p className="text-[11px] font-bold uppercase tracking-[1.5px] text-accent">Friends, right now</p><h1 className="mt-1 font-heading text-3xl font-semibold">WARS Stories</h1><p className="mt-2 text-sm text-muted">Photo, video, or text updates disappear after 24 hours. Only accepted friends can see them.</p></div><button type="button" onClick={() => void loadStories()} aria-label="Refresh Stories" className="grid h-10 w-10 place-items-center rounded-lg border border-line text-muted hover:text-foreground"><RefreshCw className="h-4 w-4" /></button></header>
+    <header className="mb-7 flex flex-wrap items-end justify-between gap-3"><div><p className="text-[11px] font-bold uppercase tracking-[1.5px] text-accent">Friends, right now</p><h1 className="mt-1 font-heading text-3xl font-semibold">WARS Stories</h1><p className="mt-2 text-sm text-muted">Stories disappear after 24 hours. Active Stories are also visible to everyone from their owner’s profile.</p></div><button type="button" onClick={() => void loadStories()} aria-label="Refresh Stories" className="grid h-10 w-10 place-items-center rounded-lg border border-line text-muted hover:text-foreground"><RefreshCw className="h-4 w-4" /></button></header>
     {error && <p role="alert" className="mb-4 rounded-lg border border-[#704044] bg-[#332329] px-3 py-2 text-sm text-[#ffb2b2]">{error}</p>}{notice && <p role="status" className="mb-4 rounded-lg border border-[#41613a] bg-[#1b2a20] px-3 py-2 text-sm text-[#b8f28a]">{notice}</p>}
     <section className="mb-8 rounded-2xl border border-line bg-panel p-5"><h2 className="font-heading text-lg font-semibold">Share a Story</h2><textarea value={caption} onChange={(event) => setCaption(event.target.value)} maxLength={300} rows={3} placeholder="What’s happening?" className="mt-3 w-full resize-y rounded-lg border border-line bg-background px-3 py-2 text-sm outline-none focus:border-accent" />
       {file && <div className="mt-3 overflow-hidden rounded-xl border border-line bg-black">{file.type.startsWith("video/") ? <video src={previewUrl} controls playsInline className="max-h-72 w-full" /> : <img src={previewUrl} alt="Story preview" className="max-h-72 w-full object-contain" />}</div>}

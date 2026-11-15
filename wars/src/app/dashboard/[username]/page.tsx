@@ -5,6 +5,7 @@ import { TopBar } from "@/components/layout/TopBar";
 import { FollowButton } from "@/components/profile/FollowButton";
 import { FriendRequestButton } from "@/components/profile/FriendRequestButton";
 import { MessageMemberButton } from "@/components/profile/MessageMemberButton";
+import { ProfileStories } from "@/components/profile/ProfileStories";
 import { ProfileAvatar } from "@/components/auth/ProfileAvatar";
 import { RoleBadge } from "@/components/auth/RoleBadge";
 import { getPrimaryRole } from "@/components/auth/RoleName";
@@ -125,6 +126,8 @@ export default async function MemberDashboardPage({ params }: { params: Promise<
           </div>
           {profile.bio && <p className="mt-6 max-w-3xl whitespace-pre-line text-sm leading-relaxed text-muted">{profile.bio}</p>}
         </section>
+
+        <ProfileStories userId={profile.id} />
 
         <section className="mt-6 rounded-2xl border border-line bg-panel p-5 md:p-6">
           <div className="flex items-center justify-between gap-4">

@@ -65,14 +65,23 @@ async function activeStoryCount(admin: ReturnType<typeof createAdminClient>, use
   return admin.from("user_stories").select("id", { count: "exact", head: true }).eq("user_id", userId).gt("expires_at", new Date().toISOString());
 }
 
-export async function GET() {
-  const user = await signedInUser();
-  if (!user) return NextResponse.json({ error: "Sign in to view Stories." }, { status: 401 });
+export async function GET(request: Request) {
+  const requestedUserId = new URL(request.url).searchParams.get("userId");
+  if (requestedUserId && !z.string().uuid().safeParse(requestedUserId).success) {
+    return NextResponse.json({ error: "Choose a valid profile." }, { status: 400 });
+  }
+  const user = requestedUserId ? null : await signedInUser();
+  if (!requestedUserId && !user) return NextResponse.json({ error: "Sign in to view your Stories feed." }, { status: 401 });
   const admin = createAdminClient();
   await purgeExpiredStories(admin);
-  const { friendIds, error: friendError } = await getFriends(admin, user.id);
-  if (friendError) return friendError.code === "42P01" || friendError.code === "PGRST205" ? migrationError() : NextResponse.json({ error: "Could not load your friends' Stories." }, { status: 500 });
-  const visibleIds = [...new Set([user.id, ...friendIds])];
+  let visibleIds: string[];
+  if (requestedUserId) {
+    visibleIds = [requestedUserId];
+  } else {
+    const { friendIds, error: friendError } = await getFriends(admin, user!.id);
+    if (friendError) return friendError.code === "42P01" || friendError.code === "PGRST205" ? migrationError() : NextResponse.json({ error: "Could not load your friends' Stories." }, { status: 500 });
+    visibleIds = [...new Set([user!.id, ...friendIds])];
+  }
   const { data: stories, error } = await admin.from("user_stories")
     .select("id,user_id,storage_path,mime_type,caption,created_at,expires_at")
     .in("user_id", visibleIds).gt("expires_at", new Date().toISOString()).order("created_at", { ascending: false }).limit(300);
