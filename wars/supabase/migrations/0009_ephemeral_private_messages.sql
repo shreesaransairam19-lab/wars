@@ -30,9 +30,8 @@ create trigger prevent_dm_message_storage
   for each row
   execute function public.prevent_dm_message_storage();
 
--- Private Realtime topics follow dm:<chat-room-uuid>. Only authenticated
--- members of that DM room may send to or receive from its Broadcast channel.
-alter table realtime.messages enable row level security;
+-- Private Realtime topics follow dm:<chat-room-uuid>. Supabase already keeps
+-- RLS enabled on realtime.messages; its managed table must not be altered here.
 
 drop policy if exists "DM members can receive private broadcasts" on realtime.messages;
 create policy "DM members can receive private broadcasts"
