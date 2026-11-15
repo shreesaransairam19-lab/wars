@@ -16,6 +16,13 @@ type Member = {
 const assignableRoles = ["reader", "pre_member", "moderator", "manga_editor", "anime_editor", "editor", "admin", "codester", "donator"] as const;
 type AssignableRole = (typeof assignableRoles)[number];
 
+function roleLabel(role: AssignableRole) {
+  if (role === "manga_editor") return "Manga Editor";
+  if (role === "anime_editor") return "Anime Editor";
+  if (role === "pre_member") return "Pre-Member";
+  return role[0].toUpperCase() + role.slice(1);
+}
+
 export default function AdminRolesPage() {
   const { user, roles, loading: authLoading } = useAuth();
   const isOwner = roles.some((role) => ["owner", "codester"].includes(role));
@@ -40,7 +47,7 @@ export default function AdminRolesPage() {
     setSelections((current) => {
       const next = { ...current };
       for (const member of nextMembers) {
-        const currentRoles = assignableRoles.filter((role) => member.roles.includes(role));
+        const currentRoles = assignableRoles.filter((role) => member.roles.includes(role)).slice(0, 2);
         next[member.id] = currentRoles.length ? currentRoles : ["reader"];
       }
       return next;
@@ -81,6 +88,24 @@ export default function AdminRolesPage() {
     setSaving(null);
   }
 
+  function selectRole(memberId: string, slot: 0 | 1, value: string) {
+    setSelections((current) => {
+      const selected = current[memberId] ?? ["reader"];
+      const next = [...selected];
+      if (slot === 0) {
+        const primary = value as AssignableRole;
+        if (next[1] === primary) next[1] = next[0];
+        next[0] = primary;
+      } else if (!value) {
+        next.splice(1);
+      } else {
+        if (next[0] === value) return current;
+        next[1] = value as AssignableRole;
+      }
+      return { ...current, [memberId]: next.slice(0, 2) as AssignableRole[] };
+    });
+  }
+
   return (
     <>
       <TopBar />
@@ -107,7 +132,7 @@ export default function AdminRolesPage() {
           <>
             <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-panel p-4">
               <div className="max-w-xl space-y-2 text-sm text-muted">
-                <p>Assign multiple roles to one member. Codester has site-wide editing access like Owner, but moderation is view-only. Manga Editor manages manga and light novels; Anime Editor manages anime series and movies.</p>
+                <p>Assign up to two roles to one member. Codester has site-wide editing access like Owner, but moderation is view-only. Manga Editor manages manga and light novels; Anime Editor manages anime series and movies.</p>
                 <p>Direct UPI payments cannot be verified automatically. Assign Donator only after checking the member’s cumulative payment confirmations reach $50 USD equivalent.</p>
               </div>
               <input
@@ -139,31 +164,30 @@ export default function AdminRolesPage() {
                           {member.roles.map((role) => <RoleBadge key={role} role={role} />)}
                         </div>
                       </div>
-                      <div className="flex flex-1 flex-wrap items-center justify-end gap-3">
-                        <fieldset disabled={protectedOwner} className="flex max-w-2xl flex-wrap gap-x-3 gap-y-2 disabled:opacity-50">
-                          <legend className="sr-only">Roles for {member.username}</legend>
-                          {assignableRoles.map((role) => (
-                            <label key={role} className="inline-flex items-center gap-1.5 text-xs text-muted">
-                              <input
-                                type="checkbox"
-                                checked={(selections[member.id] ?? ["reader"]).includes(role)}
-                                onChange={(event) => {
-                                  const checked = event.currentTarget.checked;
-                                  setSelections((current) => {
-                                    const selected = current[member.id] ?? ["reader"];
-                                    const next = checked
-                                      ? [...new Set([...selected, role])]
-                                      : selected.filter((item) => item !== role);
-                                    if (next.length === 0) return current;
-                                    return { ...current, [member.id]: next };
-                                  });
-                                }}
-                                className="accent-lime-300"
-                              />
-                              {role === "manga_editor" ? "Manga Editor" : role === "anime_editor" ? "Anime Editor" : role === "pre_member" ? "Pre-Member" : role[0].toUpperCase() + role.slice(1)}
-                            </label>
-                          ))}
-                        </fieldset>
+                      <div className="flex flex-1 flex-wrap items-end justify-end gap-2">
+                        <label className="flex flex-col gap-1 text-[10px] font-semibold text-muted">
+                          Primary role
+                          <select
+                            value={(selections[member.id] ?? ["reader"])[0] ?? "reader"}
+                            onChange={(event) => selectRole(member.id, 0, event.target.value)}
+                            disabled={protectedOwner}
+                            className="min-w-36 rounded-lg border border-line bg-background px-3 py-2 text-sm text-foreground disabled:opacity-50"
+                          >
+                            {assignableRoles.map((role) => <option key={role} value={role}>{roleLabel(role)}</option>)}
+                          </select>
+                        </label>
+                        <label className="flex flex-col gap-1 text-[10px] font-semibold text-muted">
+                          Second role
+                          <select
+                            value={(selections[member.id] ?? ["reader"])[1] ?? ""}
+                            onChange={(event) => selectRole(member.id, 1, event.target.value)}
+                            disabled={protectedOwner}
+                            className="min-w-36 rounded-lg border border-line bg-background px-3 py-2 text-sm text-foreground disabled:opacity-50"
+                          >
+                            <option value="">No second role</option>
+                            {assignableRoles.map((role) => <option key={role} value={role} disabled={role === (selections[member.id] ?? ["reader"])[0]}>{roleLabel(role)}</option>)}
+                          </select>
+                        </label>
                         <button
                           type="button"
                           onClick={() => void saveRole(member.id)}

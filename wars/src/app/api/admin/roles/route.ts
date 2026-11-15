@@ -86,7 +86,7 @@ export async function PUT(request: Request) {
   )] as string[];
   if (
     selectedRoles.length < 1 ||
-    selectedRoles.length > MANAGED_ROLES.length ||
+    selectedRoles.length > 2 ||
     selectedRoles.some((role) => typeof role !== "string" || !MANAGED_ROLES.includes(role as ManagedRole))
   ) return NextResponse.json({ error: "Choose one or more valid roles" }, { status: 400 });
   const validRoles = selectedRoles as ManagedRole[];
