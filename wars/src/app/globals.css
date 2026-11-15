@@ -714,9 +714,16 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .home-menu-card__video,
   .library-choice-card__video,
-  .home-page-background__video {
+  .home-page-background__video,
+  .animate-\[float-up_2\.5s_ease-out_forwards\] {
     display: none;
   }
+}
+
+@keyframes float-up {
+  from { opacity: 0; transform: translateY(18px) scale(.85); }
+  15% { opacity: 1; }
+  to { opacity: 0; transform: translateY(-110px) scale(1.15); }
 }
 
 h1, h2, h3, h4, h5, h6 {

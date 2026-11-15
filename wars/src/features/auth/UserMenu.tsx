@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { User, LogOut, Shield, Settings } from "lucide-react";
+import { User, LogOut, Shield, Settings, Users, CirclePlay, Clapperboard } from "lucide-react";
 import { useAuth } from "@/features/auth/useAuth";
 import { RoleBadge } from "@/components/auth/RoleBadge";
 import { getPrimaryRole, RoleName } from "@/components/auth/RoleName";
@@ -84,6 +84,33 @@ export function UserMenu() {
             >
               <span aria-hidden="true">✦</span>
               Profile frames
+            </Link>
+
+            <Link
+              href="/friends"
+              className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted transition-colors hover:bg-panel2 hover:text-foreground"
+              onClick={() => setOpen(false)}
+            >
+              <Users className="h-4 w-4" />
+              Friends & requests
+            </Link>
+
+            <Link
+              href="/stories"
+              className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted transition-colors hover:bg-panel2 hover:text-foreground"
+              onClick={() => setOpen(false)}
+            >
+              <CirclePlay className="h-4 w-4" />
+              Stories
+            </Link>
+
+            <Link
+              href="/watch-parties"
+              className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted transition-colors hover:bg-panel2 hover:text-foreground"
+              onClick={() => setOpen(false)}
+            >
+              <Clapperboard className="h-4 w-4" />
+              Watch parties
             </Link>
 
             {canReviewFramePayments && (

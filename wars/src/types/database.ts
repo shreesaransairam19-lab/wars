@@ -9,6 +9,26 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      friend_requests: {
+        Row: { id: string; requester_id: string; addressee_id: string; status: string; created_at: string; updated_at: string; responded_at: string | null };
+        Insert: { id?: string; requester_id: string; addressee_id: string; status?: string; created_at?: string; updated_at?: string; responded_at?: string | null };
+        Update: { status?: string; updated_at?: string; responded_at?: string | null };
+      };
+      user_stories: {
+        Row: { id: string; user_id: string; storage_path: string | null; mime_type: string | null; caption: string; created_at: string; expires_at: string };
+        Insert: { id?: string; user_id: string; storage_path?: string | null; mime_type?: string | null; caption?: string; created_at?: string; expires_at?: string };
+        Update: { storage_path?: string | null; mime_type?: string | null; caption?: string; expires_at?: string };
+      };
+      watch_parties: {
+        Row: { id: string; host_id: string; chapter_id: string; created_at: string; closed_at: string | null };
+        Insert: { id?: string; host_id: string; chapter_id: string; created_at?: string; closed_at?: string | null };
+        Update: { closed_at?: string | null };
+      };
+      watch_party_members: {
+        Row: { party_id: string; user_id: string; status: string; invited_at: string; responded_at: string | null };
+        Insert: { party_id: string; user_id: string; status?: string; invited_at?: string; responded_at?: string | null };
+        Update: { status?: string; responded_at?: string | null };
+      };
       profiles: {
         Row: {
           id: string;
@@ -663,6 +683,10 @@ export interface Database {
       };
     };
     Functions: {
+      is_watch_party_member: {
+        Args: { p_topic: string; p_user_id: string };
+        Returns: boolean;
+      };
       review_profile_frame_order: {
         Args: { p_order_id: string; p_reviewer_id: string; p_action: string };
         Returns: Json;

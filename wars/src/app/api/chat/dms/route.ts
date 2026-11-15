@@ -3,6 +3,8 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveChatBan } from "@/lib/moderation/chat-ban";
+import { getUserRoles } from "@/lib/permissions/guards";
+import { getPrimaryRole } from "@/components/auth/RoleName";
 
 const startSchema = z.object({ username: z.string().trim().min(2).max(32) });
 const blockedRecipientRoles = new Set(["owner", "codester", "admin", "editor", "manga_editor", "anime_editor"]);
@@ -13,6 +15,22 @@ async function rolesFor(admin: ReturnType<typeof createAdminClient>, userId: str
     const roles = row.roles;
     return (Array.isArray(roles) ? roles : roles ? [roles] : []).map((role) => role.name);
   });
+}
+
+async function currentUserProfile(admin: ReturnType<typeof createAdminClient>, userId: string) {
+  const [{ data: profile }, roles, { data: equippedFrame }] = await Promise.all([
+    admin.from("profiles").select("username,display_name,avatar_path").eq("id", userId).maybeSingle(),
+    getUserRoles(userId),
+    admin.from("profile_frame_equipped").select("frame_id").eq("user_id", userId).maybeSingle(),
+  ]);
+  return profile ? {
+    username: profile.username,
+    display_name: profile.display_name,
+    avatar_path: profile.avatar_path,
+    role: getPrimaryRole(roles) ?? "reader",
+    roles,
+    frame_id: equippedFrame?.frame_id ?? null,
+  } : null;
 }
 
 export async function GET() {
@@ -29,7 +47,7 @@ export async function GET() {
   if (activeBan) return NextResponse.json({ error: "Your WARS chat access is banned" }, { status: 403 });
   if (error) return NextResponse.json({ error: "Could not load conversations" }, { status: 500 });
   const ids = (memberships ?? []).map((membership) => membership.room_id);
-  if (!ids.length) return NextResponse.json({ conversations: [] });
+  if (!ids.length) return NextResponse.json({ conversations: [], currentUserProfile: await currentUserProfile(admin, user.id) });
   const [{ data: rooms, error: roomError }, { data: peers, error: peersError }] = await Promise.all([
     admin.from("chat_rooms").select("id,name,slug,room_type,parent_room_id").in("id", ids).eq("room_type", "dm"),
     admin.from("chat_room_members").select("room_id,user_id,profiles:user_id(username, display_name)").in("room_id", ids).neq("user_id", user.id),
@@ -41,7 +59,7 @@ export async function GET() {
     const profile = Array.isArray(peer?.profiles) ? peer.profiles[0] : peer?.profiles;
     return { ...room, name: profile?.display_name || profile?.username || room.name, username: profile?.username ?? "", peer_id: peer?.user_id ?? null };
   });
-  return NextResponse.json({ conversations });
+  return NextResponse.json({ conversations, currentUserProfile: await currentUserProfile(admin, user.id) });
 }
 
 export async function POST(request: Request) {
@@ -68,7 +86,7 @@ export async function POST(request: Request) {
     if (dmRoomIds.length) {
       const { data: matching } = await admin.from("chat_room_members").select("room_id").eq("user_id", target.id).in("room_id", dmRoomIds);
       const existing = dmRooms?.find((room) => room.id === matching?.[0]?.room_id);
-      if (existing) return NextResponse.json({ conversation: { ...existing, name: target.display_name || target.username, username: target.username, peer_id: target.id } });
+      if (existing) return NextResponse.json({ conversation: { ...existing, name: target.display_name || target.username, username: target.username, peer_id: target.id }, currentUserProfile: await currentUserProfile(admin, user.id) });
     }
   }
   const slug = `dm-${crypto.randomUUID()}`;
@@ -79,5 +97,5 @@ export async function POST(request: Request) {
     await admin.from("chat_rooms").delete().eq("id", room.id);
     return NextResponse.json({ error: "Could not start conversation" }, { status: 500 });
   }
-  return NextResponse.json({ conversation: { ...room, name: target.display_name || target.username, username: target.username, peer_id: target.id } }, { status: 201 });
+  return NextResponse.json({ conversation: { ...room, name: target.display_name || target.username, username: target.username, peer_id: target.id }, currentUserProfile: await currentUserProfile(admin, user.id) }, { status: 201 });
 }

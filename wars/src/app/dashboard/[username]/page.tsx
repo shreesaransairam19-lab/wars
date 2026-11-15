@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, BookOpen, MessageCircle, Star, Trophy, Users } from "lucide-react";
 import { TopBar } from "@/components/layout/TopBar";
 import { FollowButton } from "@/components/profile/FollowButton";
+import { FriendRequestButton } from "@/components/profile/FriendRequestButton";
 import { MessageMemberButton } from "@/components/profile/MessageMemberButton";
 import { ProfileAvatar } from "@/components/auth/ProfileAvatar";
 import { RoleBadge } from "@/components/auth/RoleBadge";
@@ -113,6 +114,12 @@ export default async function MemberDashboardPage({ params }: { params: Promise<
                 initialFollowing={Boolean(ownFollowResult.data)}
                 initialFollowerCount={followerResult.count ?? 0}
                 available={followAvailable}
+              />
+              <FriendRequestButton
+                targetUserId={profile.id}
+                username={profile.username}
+                isSignedIn={Boolean(viewer)}
+                isOwnProfile={isOwnProfile}
               />
             </div>
           </div>
