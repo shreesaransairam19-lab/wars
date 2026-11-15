@@ -139,11 +139,14 @@ export async function POST(request: Request) {
     if (listError) return NextResponse.json({ error: "Could not verify the uploaded Story media." }, { status: 500 });
     if (!uploaded) return NextResponse.json({ error: "Upload the selected file before publishing." }, { status: 400 });
     const metadata = uploaded.metadata as { mimetype?: string; size?: number } | null;
-    const mimeType = metadata?.mimetype ?? "";
-    const storedSize = Number(metadata?.size ?? uploaded.size ?? 0);
+    const mimeType = uploaded.contentType ?? metadata?.mimetype ?? "";
+    const storedSize = Number(uploaded.size ?? metadata?.size ?? 0);
     if (!STORY_MIME_EXTENSIONS[mimeType] || storedSize <= 0 || storedSize > MAX_STORY_BYTES) {
       await admin.storage.from("user-stories").remove([publish.data.path]);
-      return NextResponse.json({ error: "The uploaded Story file type or size is not allowed." }, { status: 400 });
+      const error = !STORY_MIME_EXTENSIONS[mimeType]
+        ? `Unsupported Story format (${mimeType || "unknown"}). Use JPG, PNG, WebP, GIF, MP4, WebM, or MOV.`
+        : `Story files must be between 1 byte and ${MAX_STORY_BYTES / (1024 * 1024)} MB.`;
+      return NextResponse.json({ error }, { status: 400 });
     }
     const count = await activeStoryCount(admin, user.id);
     if (count.error) { await admin.storage.from("user-stories").remove([publish.data.path]); return count.error.code === "42P01" || count.error.code === "PGRST205" ? migrationError() : NextResponse.json({ error: "Could not publish Story." }, { status: 500 }); }
