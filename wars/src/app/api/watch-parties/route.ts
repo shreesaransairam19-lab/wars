@@ -51,7 +51,10 @@ async function partySummaries(admin: ReturnType<typeof createAdminClient>, party
     admin.from("profiles").select("id,username,display_name").in("id", hostIds),
   ]);
   const seriesIds = [...new Set((chapters ?? []).map((chapter) => chapter.series_id))];
-  const { data: series } = seriesIds.length ? await admin.from("series").select("id,title,slug").in("id", seriesIds) : { data: [], error: null };
+  const seriesResult = seriesIds.length
+    ? await admin.from("series").select("id,title,slug").in("id", seriesIds)
+    : null;
+  const series = seriesResult?.data ?? [];
   const episodeById = new Map((chapters ?? []).map((chapter) => [chapter.id, { ...chapter, series: (series ?? []).find((item) => item.id === chapter.series_id) ?? null }]));
   const profileById = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
   return parties.map((party) => ({ ...party, membershipStatus: membershipByParty.get(party.id) ?? "accepted", episode: episodeById.get(party.chapter_id) ?? null, host: profileById.get(party.host_id) ?? null }));
@@ -69,10 +72,11 @@ export async function GET() {
   if (missingMigration(friendResult.error) || missingMigration(memberResult.error)) return migrationError();
   if (friendResult.error || memberResult.error || catalogResult.error) return NextResponse.json({ error: "Could not load Watch Parties." }, { status: 500 });
   const friendIds = [...new Set((friendResult.data ?? []).map((row) => row.requester_id === user.id ? row.addressee_id : row.requester_id))];
-  const { data: friends, error: friendsError } = friendIds.length
+  const friendsResult = friendIds.length
     ? await admin.from("profiles").select("id,username,display_name,avatar_path").in("id", friendIds).order("username")
-    : { data: [], error: null };
-  if (friendsError) return NextResponse.json({ error: "Could not load friends." }, { status: 500 });
+    : null;
+  if (friendsResult?.error) return NextResponse.json({ error: "Could not load friends." }, { status: 500 });
+  const friends = friendsResult?.data ?? [];
   const membershipByParty = new Map((memberResult.data ?? []).map((row) => [row.party_id, row.status]));
   const partyIds = [...membershipByParty.keys()];
   const summaries = await partySummaries(admin, partyIds, membershipByParty);
