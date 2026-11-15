@@ -17,6 +17,7 @@ export interface Room {
   room_type: "server" | "channel" | "dm";
   parent_room_id: string | null;
   peer_id?: string | null;
+  username?: string;
 }
 
 const CHAT_EMOJIS = ["😀", "😄", "😂", "🥹", "😍", "😎", "🤔", "😭", "😅", "😊", "🙂", "🙃", "😉", "😴", "😮", "🤯", "🥳", "😤", "❤️", "💜", "💙", "✨", "🔥", "⚡", "🎉", "👏", "👍", "👎", "🙏", "🤝", "💀", "🍿", "🌸", "🗿"];
