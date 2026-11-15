@@ -13,6 +13,7 @@ const navLinks = [
   { href: "/", label: "Home" },
   { href: "/library", label: "Library" },
   { href: "/chat", label: "Chat" },
+  { href: "/anichat", label: "AniChat" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/profile/frames", label: "Store" },
   { href: "/support", label: "Payment" },

@@ -6,7 +6,7 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
 import { RoleName } from "@/components/auth/RoleName";
 import { RoleBadge } from "@/components/auth/RoleBadge";
 import { ProfileAvatar } from "@/components/auth/ProfileAvatar";
-import { Send, ImagePlay, Smile } from "lucide-react";
+import { ArrowLeft, Send, ImagePlay, Smile } from "lucide-react";
 import Image from "next/image";
 import giphyPoweredBy from "@/assets/giphy-powered-by.svg";
 
@@ -130,7 +130,7 @@ function mergeDmMessage(messages: Message[], message: Message) {
     .sort((a, b) => a.created_at.localeCompare(b.created_at));
 }
 
-export function ChatView({ rooms, roomsError, currentUserId, canManageCommunities }: { rooms: Room[]; roomsError?: string; currentUserId: string; canManageCommunities: boolean }) {
+export function ChatView({ rooms, roomsError, currentUserId, canManageCommunities, privateMessagesOnly = false }: { rooms: Room[]; roomsError?: string; currentUserId: string; canManageCommunities: boolean; privateMessagesOnly?: boolean }) {
   const [roomList, setRoomList] = useState(rooms);
   const servers = roomList
     .filter((r) => r.room_type === "server")
@@ -141,8 +141,9 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
     .sort((a, b) => Number(!isGeneralChannel(a, generalServerId)) - Number(!isGeneralChannel(b, generalServerId)) || a.name.localeCompare(b.name));
   const [dms, setDms] = useState<Room[]>([]);
   const [activeServer, setActiveServer] = useState(servers[0]?.id ?? "");
-  const [activeRoom, setActiveRoom] = useState(
-    channels.find((c) => c.parent_room_id === servers[0]?.id)?.id ?? channels[0]?.id ?? ""
+  const [activeRoom, setActiveRoom] = useState(() => privateMessagesOnly
+    ? ""
+    : channels.find((c) => c.parent_room_id === servers[0]?.id)?.id ?? channels[0]?.id ?? ""
   );
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -642,9 +643,9 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
   }
 
   return (
-    <div className="flex h-[calc(100vh-64px)]">
+    <div className={`flex min-h-0 ${privateMessagesOnly ? "h-[calc(100dvh-64px)]" : "h-[calc(100vh-64px)]"}`}>
       {/* Servers */}
-      <nav
+      {!privateMessagesOnly && <nav
         aria-label="Servers"
         className="flex w-16 shrink-0 flex-col items-center gap-2 border-r border-line bg-[#141419] py-3"
       >
@@ -664,10 +665,41 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
             {server.name.slice(0, 2)}
           </button>
         ))}
-      </nav>
+      </nav>}
 
       {/* Channels */}
-      <aside className="hidden w-56 shrink-0 overflow-y-auto border-r border-line bg-panel p-2 sm:block">
+      {privateMessagesOnly ? (
+        <aside className={`${activeRoom ? "hidden" : "flex"} w-full shrink-0 flex-col overflow-y-auto border-r border-line bg-panel p-4 sm:flex sm:w-72`}>
+          <h2 className="font-heading text-lg font-semibold">AniChat</h2>
+          <p className="mt-1 text-xs text-muted">Private messages with readers and moderators.</p>
+          <div className="mt-5 border-t border-line pt-4">
+            <h3 className="px-1 text-[10px] font-bold uppercase tracking-wider text-muted">Start a conversation</h3>
+            <form className="mt-2 flex gap-2" onSubmit={startDm}>
+              <input className="min-w-0 flex-1 rounded-lg border border-line bg-panel2 px-3 py-2 text-sm" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Member username" aria-label="Member username" />
+              <button className="rounded-lg bg-accent px-3 text-sm font-semibold text-[#171a11]" type="submit" aria-label="Start private message">+</button>
+            </form>
+            <p className="mt-2 px-1 text-[11px] text-muted">Owner, Codester, Admin, and Editor accounts can only be contacted through Feedback.</p>
+          </div>
+          {error && <p className="mt-3 text-xs text-pink" role="alert">{error}</p>}
+          <div className="mt-5 border-t border-line pt-4">
+            <h3 className="px-1 text-[10px] font-bold uppercase tracking-wider text-muted">Conversations</h3>
+            {dms.length === 0 ? (
+              <p className="px-1 py-4 text-sm text-muted">No private messages yet. Start one with a username above.</p>
+            ) : (
+              <ul className="mt-2 space-y-1">
+                {dms.map((dm) => (
+                  <li key={dm.id}>
+                    <button type="button" onClick={() => setActiveRoom(dm.id)} aria-current={activeRoom === dm.id} className={`w-full rounded-lg px-3 py-2.5 text-left transition-colors ${activeRoom === dm.id ? "bg-panel2 text-foreground" : "text-muted hover:bg-panel2 hover:text-foreground"}`}>
+                      <span className="block truncate text-sm font-medium">{dm.name}</span>
+                      {dm.username && <span className="block truncate text-xs text-muted">@{dm.username}</span>}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </aside>
+      ) : <aside className="hidden w-56 shrink-0 overflow-y-auto border-r border-line bg-panel p-2 sm:block">
         <h2 className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted">
           Channels
         </h2>
@@ -706,20 +738,23 @@ export function ChatView({ rooms, roomsError, currentUserId, canManageCommunitie
           {servers.filter((server) => server.slug !== "general-chat").map((server) => <button key={server.id} className="block px-2 py-1 text-left text-[10px] text-pink" onClick={() => void changeCommunity("remove", server)} type="button">Remove {server.name}</button>)}
           {serverChannels.filter((channel) => channel.slug !== "general-chat-general").map((channel) => <button key={channel.id} className="block px-2 py-1 text-left text-[10px] text-pink" onClick={() => void changeCommunity("remove", channel)} type="button">Remove #{channel.name}</button>)}
         </div>}
-      </aside>
+      </aside>}
 
       {/* Messages */}
-      <div className="flex min-w-0 flex-1 flex-col bg-background">
+      <div className={`${privateMessagesOnly && !activeRoom ? "hidden sm:flex" : "flex"} min-h-0 min-w-0 flex-1 flex-col bg-background`}>
         <header className="border-b border-line px-4 py-2.5">
           <div className="flex items-center justify-between gap-2">
-            <h1 className="font-heading text-sm font-semibold">{activeRoomData?.room_type === "dm" ? `@ ${activeRoomName}` : `# ${activeRoomName}`}</h1>
+            <div className="flex min-w-0 items-center gap-2">
+              {privateMessagesOnly && activeRoom && <button type="button" className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-line text-muted sm:hidden" aria-label="Back to conversations" onClick={() => setActiveRoom("")}><ArrowLeft className="h-4 w-4" /></button>}
+              <h1 className="truncate font-heading text-sm font-semibold">{privateMessagesOnly ? (activeRoom ? activeRoomName : "AniChat") : activeRoomData?.room_type === "dm" ? `@ ${activeRoomName}` : `# ${activeRoomName}`}</h1>
+            </div>
             <span className="flex items-center gap-1.5 text-[10px] text-muted"><span className={`h-1.5 w-1.5 rounded-full ${activeRoomData?.room_type === "dm" ? (dmConnected && dmPeerOnline ? "bg-emerald-400" : "bg-amber-400") : "bg-emerald-400"}`} />{activeRoomData?.room_type === "dm" ? (dmConnected ? (dmPeerOnline ? "Reader online" : "Waiting for reader") : "Connecting…") : "Live updates"}</span>
           </div>
         </header>
 
         <div className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
           {activeRoom && loading && messages.length === 0 && <p className="text-sm text-muted">Loading messages…</p>}
-          {!activeRoom && !loading && <p className={`text-sm ${roomsError ? "text-pink" : "text-muted"}`} role={roomsError ? "alert" : undefined}>{roomsError ?? "No chat rooms are available yet. Try refreshing the page."}</p>}
+          {!activeRoom && !loading && <p className={`text-sm ${roomsError ? "text-pink" : "text-muted"}`} role={roomsError ? "alert" : undefined}>{privateMessagesOnly ? "Select a conversation or start a new one from the list." : roomsError ?? "No chat rooms are available yet. Try refreshing the page."}</p>}
           {activeRoom && !loading && messages.length === 0 && !error && <p className="text-sm text-muted">No messages yet. Start the conversation.</p>}
           {messages.map((message) => {
             const grouped = new Map<string, number>();
