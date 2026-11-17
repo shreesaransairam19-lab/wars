@@ -58,7 +58,7 @@ export async function GET(request: Request) {
   const apiUrl = new URL("https://kitsu.io/api/edge/anime");
   apiUrl.searchParams.set("page[limit]", "20");
   apiUrl.searchParams.set("page[offset]", String(offset));
-  apiUrl.searchParams.set("filter[nsfw]", "false");
+  
   apiUrl.searchParams.set("sort", "-userCount");
   if (query) apiUrl.searchParams.set("filter[text]", query);
 
