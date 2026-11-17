@@ -26,7 +26,7 @@ function safePoster(value: unknown): string | null {
   if (typeof value !== "string") return null;
   try {
     const url = new URL(value);
-    return url.protocol === "https:" && (url.hostname === "media.kitsu.io" || url.hostname.endsWith(".kitsu.io"))
+    return url.protocol === "https:" && (url.hostname === "media.kitsu.app" || url.hostname === "media.kitsu.io" || url.hostname.endsWith(".kitsu.io"))
       ? url.toString()
       : null;
   } catch {
